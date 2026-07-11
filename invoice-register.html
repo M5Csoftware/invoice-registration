@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Invoice Register</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --paper:#EFEAD9;
+  --paper-line: rgba(30,58,43,0.10);
+  --ink:#1E3A2B;
+  --ink-dark:#16281C;
+  --brass:#A67C3D;
+  --brass-light:#D8B87A;
+  --red:#9C3B2E;
+  --green:#2F6B45;
+  --slate:#4A4438;
+  --card:#F7F4E9;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink-dark);font-family:'IBM Plex Sans',sans-serif;}
+h1,h2,h3{font-family:'Fraunces',serif;}
+button,select,input,textarea{font-family:'IBM Plex Sans',sans-serif;}
+::selection{background:var(--brass-light);}
+
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible{
+  outline:2px solid var(--brass); outline-offset:2px;
+}
+
+.app-shell{max-width:1080px;margin:0 auto;}
+
+.register-header{
+  background:linear-gradient(135deg,var(--ink-dark),var(--ink));
+  border-bottom:4px solid var(--brass);
+  padding:16px 24px;
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+}
+.register-title h1{margin:0;font-weight:900;font-size:1.6rem;color:var(--paper);letter-spacing:0.01em;}
+.register-subtitle{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--brass-light);margin-top:2px;}
+.identity-plate{display:flex;flex-direction:column;}
+.identity-plate label{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--brass-light);margin-bottom:4px;}
+.identity-plate select{background:var(--brass);color:var(--ink-dark);font-family:'IBM Plex Mono',monospace;font-weight:600;border:1px solid var(--ink-dark);padding:7px 10px;border-radius:3px;min-width:220px;}
+
+.tabs{display:flex;gap:2px;background:var(--ink-dark);padding:0 20px;overflow-x:auto;white-space:nowrap;}
+.tab-btn{padding:10px 16px;background:var(--ink);color:var(--brass-light);border:none;border-top:3px solid transparent;cursor:pointer;border-radius:4px 4px 0 0;font-weight:600;font-size:0.82rem;}
+.tab-btn.active{background:var(--paper);color:var(--ink-dark);border-top:3px solid var(--brass);}
+
+.ledger-page{
+  background-color:var(--paper);
+  background-image:repeating-linear-gradient(180deg, transparent 0 31px, var(--paper-line) 31px 32px);
+  padding:24px;min-height:60vh;
+}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;}
+.kpi-card{background:var(--card);border:1px solid rgba(30,58,43,0.2);border-left:4px solid var(--brass);border-radius:4px;padding:14px 16px;}
+.kpi-num{font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:600;color:var(--ink);line-height:1;}
+.kpi-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--slate);margin-top:6px;}
+
+table.ledger-table{width:100%;border-collapse:collapse;margin-top:10px;}
+.ledger-table th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--slate);border-bottom:2px solid var(--ink);padding:8px 10px;}
+.ledger-table td{padding:10px;border-bottom:1px solid rgba(30,58,43,0.15);font-size:0.85rem;vertical-align:top;}
+.ledger-table tr:hover td{background:rgba(166,124,61,0.07);}
+
+.flag{display:inline-block;font-size:0.65rem;font-weight:600;padding:2px 7px;border-radius:9px;margin:2px 4px 2px 0;white-space:nowrap;}
+.flag-high{background:rgba(156,59,46,0.13);color:var(--red);border:1px solid var(--red);}
+.flag-medium{background:rgba(166,124,61,0.15);color:var(--brass);border:1px solid var(--brass);}
+.flag-low{background:rgba(74,68,56,0.10);color:var(--slate);border:1px solid var(--slate);}
+
+.btn{font-weight:600;font-size:0.78rem;padding:7px 13px;border-radius:4px;border:1px solid transparent;cursor:pointer;}
+.btn-approve{background:var(--green);color:#fff;}
+.btn-reject{background:var(--red);color:#fff;}
+.btn-pay{background:var(--brass);color:var(--ink-dark);}
+.btn-primary{background:var(--ink);color:var(--paper);}
+.btn-ghost{background:transparent;border:1px solid var(--ink);color:var(--ink);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn + .btn{margin-left:6px;}
+
+.stamp{display:inline-block;font-family:'Fraunces',serif;font-weight:900;font-size:0.85rem;letter-spacing:0.04em;text-transform:uppercase;padding:3px 9px;border:3px double currentColor;border-radius:6px;transform:rotate(-7deg);}
+.stamp-approved{color:var(--green);}
+.stamp-rejected{color:var(--red);}
+.stamp-paid{color:var(--brass);margin-left:4px;}
+.stamp-new{animation:stampSlam 0.35s ease-out;}
+@keyframes stampSlam{0%{transform:scale(2.2) rotate(-7deg);opacity:0;}60%{transform:scale(0.92) rotate(-7deg);opacity:1;}100%{transform:scale(1) rotate(-7deg);opacity:1;}}
+@media (prefers-reduced-motion:reduce){.stamp-new{animation:none;}}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media (max-width:640px){.form-grid{grid-template-columns:1fr;} .register-header{flex-direction:column;align-items:flex-start;}}
+
+label{font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--slate);font-weight:600;display:block;margin-bottom:4px;}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid rgba(30,58,43,0.35);border-radius:3px;font-size:0.85rem;background:#fff;color:var(--ink-dark);}
+textarea{resize:vertical;}
+
+.callout{border-left:4px solid var(--brass);background:rgba(166,124,61,0.08);padding:12px 14px;border-radius:3px;margin:10px 0;font-size:0.85rem;}
+.callout-danger{border-left-color:var(--red);background:rgba(156,59,46,0.08);}
+
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(22,40,28,0.55);align-items:center;justify-content:center;z-index:50;padding:16px;}
+#modal-content{background:var(--paper);max-width:480px;width:100%;border-radius:6px;padding:20px;border:1px solid var(--ink);}
+</style>
+</head>
+<body>
+<div class="app-shell" id="app">
+  <div style="padding:60px 24px;text-align:center;color:var(--slate);">Loading register…</div>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal-content"></div>
+</div>
+
+<script>
+// ---------- state ----------
+let CONFIG = { threshold: 50000, currency: 'INR' };
+let TEAM = [];
+let INVOICES = [];
+let currentUserId = null;
+let activeTab = 'dashboard';
+let lastActionId = null;
+
+// ---------- helpers ----------
+function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function h(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function fmtAmount(n){
+  const symbols = { INR:'₹', USD:'$', EUR:'€' };
+  return (symbols[CONFIG.currency]||'') + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:2});
+}
+function getCurrentUser(){ return TEAM.find(function(m){ return m.id === currentUserId; }) || null; }
+function memberName(id){ const m = TEAM.find(function(t){ return t.id === id; }); return m ? m.name : '(removed team member)'; }
+
+// ---------- storage ----------
+async function loadAll(){
+  try{
+    const r = await window.storage.get('config', true);
+    CONFIG = (r && r.value) ? JSON.parse(r.value) : { threshold:50000, currency:'INR' };
+  }catch(e){ CONFIG = { threshold:50000, currency:'INR' }; }
+
+  try{
+    const r = await window.storage.get('team', true);
+    TEAM = (r && r.value) ? JSON.parse(r.value) : [];
+  }catch(e){ TEAM = []; }
+  if(TEAM.length === 0){
+    TEAM = [{ id: uid('mem'), name:'Admin', role:'Finance Manager' }];
+    await saveTeam();
+  }
+
+  try{
+    const r = await window.storage.get('invoices', true);
+    INVOICES = (r && r.value) ? JSON.parse(r.value) : [];
+  }catch(e){ INVOICES = []; }
+
+  render();
+}
+async function saveConfig(){ try{ await window.storage.set('config', JSON.stringify(CONFIG), true); }catch(e){ console.error('save config failed', e); } }
+async function saveTeam(){ try{ await window.storage.set('team', JSON.stringify(TEAM), true); }catch(e){ console.error('save team failed', e); } }
+async function saveInvoices(){ try{ await window.storage.set('invoices', JSON.stringify(INVOICES), true); }catch(e){ console.error('save invoices failed', e); } }
+
+// ---------- fraud-flag logic ----------
+function computeFlags(inv, allInvoices){
+  const flags = [];
+  const sameVendor = allInvoices.filter(function(i){ return i.vendor.trim().toLowerCase() === inv.vendor.trim().toLowerCase(); });
+
+  const exactDup = sameVendor.find(function(i){ return i.invoiceNumber.trim().toLowerCase() === inv.invoiceNumber.trim().toLowerCase(); });
+  if(exactDup) flags.push({ level:'high', text:'Same invoice number already exists for this vendor — possible resubmission' });
+
+  if(!exactDup){
+    const closeDup = sameVendor.find(function(i){
+      return Math.abs(i.amount - inv.amount) < 0.01 &&
+             Math.abs(new Date(i.invoiceDate) - new Date(inv.invoiceDate)) < 3*86400000;
+    });
+    if(closeDup) flags.push({ level:'medium', text:'Same vendor billed the same amount within 3 days — check for duplicate payment' });
+  }
+
+  if(CONFIG.threshold > 0 && inv.amount < CONFIG.threshold && inv.amount >= CONFIG.threshold*0.9){
+    flags.push({ level:'medium', text:'Amount sits just under the second-approval threshold — verify it is not split to dodge review' });
+  }
+
+  if(inv.amount > 0 && inv.amount % 1000 === 0){
+    flags.push({ level:'low', text:'Round-number amount — flagged for awareness only' });
+  }
+
+  if(sameVendor.length === 0){
+    flags.push({ level:'low', text:'First invoice on record from this vendor — confirm vendor details before paying' });
+  }
+
+  if(inv.bankLast4){
+    const priorWithBank = sameVendor
+      .filter(function(i){ return i.bankLast4; })
+      .sort(function(a,b){ return new Date(b.invoiceDate) - new Date(a.invoiceDate); })[0];
+    if(priorWithBank && priorWithBank.bankLast4 !== inv.bankLast4){
+      flags.push({ level:'high', text:"Bank account details differ from this vendor's last invoice — verify directly with the vendor before paying" });
+    }
+  }
+
+  return flags;
+}
+
+function pushHistory(inv, user, action, note){
+  inv.history = inv.history || [];
+  inv.history.push({ at: Date.now(), actorId:user.id, actorName:user.name, actorRole:user.role, action:action, note: note || '' });
+}
+
+// ---------- actions ----------
+async function handleCheckin(fd){
+  const user = getCurrentUser();
+  if(!user) return;
+  const amount = parseFloat(fd.get('amount'));
+  if(!fd.get('vendor') || !fd.get('invoiceNumber') || !fd.get('invoiceDate') || isNaN(amount) || amount <= 0) return;
+
+  const inv = {
+    id: uid('inv'),
+    vendor: fd.get('vendor').trim(),
+    invoiceNumber: fd.get('invoiceNumber').trim(),
+    invoiceDate: fd.get('invoiceDate'),
+    amount: amount,
+    poNumber: (fd.get('poNumber')||'').trim(),
+    bankLast4: (fd.get('bankLast4')||'').trim(),
+    description: (fd.get('description')||'').trim(),
+    enteredBy: user.id,
+    enteredAt: Date.now(),
+    status: 'pending_l1',
+    approvals: [],
+    history: []
+  };
+  inv.flags = computeFlags(inv, INVOICES);
+  pushHistory(inv, user, 'Checked in', inv.flags.length ? ('Flags at entry: ' + inv.flags.map(function(f){return f.text;}).join('; ')) : '');
+  INVOICES.push(inv);
+  await saveInvoices();
+  activeTab = 'dashboard';
+  render();
+  openModal(checkinConfirmationHtml(inv));
+}
+
+async function handleApprove(id){
+  const user = getCurrentUser();
+  if(!user) return;
+  const inv = INVOICES.find(function(i){ return i.id === id; });
+  if(!inv) return;
+  if(inv.enteredBy === user.id) return;
+
+  if(inv.status === 'pending_l1'){
+    if(user.role !== 'Approver' && user.role !== 'Finance Manager') return;
+    inv.approvals = inv.approvals || [];
+    inv.approvals.push({ by:user.id, at:Date.now() });
+    inv.status = inv.amount >= CONFIG.threshold ? 'pending_l2' : 'approved';
+    pushHistory(inv, user, inv.status === 'approved' ? 'Approved (final)' : 'Approved (first approval)');
+  } else if(inv.status === 'pending_l2'){
+    if(user.role !== 'Finance Manager') return;
+    if(inv.approvals[0] && inv.approvals[0].by === user.id) return;
+    inv.approvals.push({ by:user.id, at:Date.now() });
+    inv.status = 'approved';
+    pushHistory(inv, user, 'Approved (second approval — final)');
+  } else {
+    return;
+  }
+  lastActionId = id;
+  await saveInvoices();
+  render();
+}
+
+async function handleReject(id, reason){
+  const user = getCurrentUser();
+  if(!user) return;
+  const inv = INVOICES.find(function(i){ return i.id === id; });
+  if(!inv || inv.enteredBy === user.id) return;
+  if(inv.status !== 'pending_l1' && inv.status !== 'pending_l2') return;
+  inv.status = 'rejected';
+  lastActionId = id;
+  pushHistory(inv, user, 'Rejected', reason);
+  await saveInvoices();
+  render();
+}
+
+async function handlePay(id){
+  const user = getCurrentUser();
+  if(!user || user.role !== 'Finance Manager') return;
+  const inv = INVOICES.find(function(i){ return i.id === id; });
+  if(!inv || inv.status !== 'approved' || inv.enteredBy === user.id) return;
+  inv.status = 'paid';
+  lastActionId = id;
+  pushHistory(inv, user, 'Marked as paid');
+  await saveInvoices();
+  render();
+}
+
+async function handleAddMember(fd){
+  const name = (fd.get('name')||'').trim();
+  const role = fd.get('role');
+  if(!name) return;
+  TEAM.push({ id: uid('mem'), name:name, role:role });
+  await saveTeam();
+  render();
+}
+
+async function handleRemoveMember(id){
+  TEAM = TEAM.filter(function(m){ return m.id !== id; });
+  if(currentUserId === id) currentUserId = null;
+  await saveTeam();
+  render();
+}
+
+async function handleSettings(fd){
+  CONFIG.currency = fd.get('currency');
+  CONFIG.threshold = parseFloat(fd.get('threshold')) || 0;
+  await saveConfig();
+  render();
+}
+
+// ---------- modal ----------
+function openModal(html){
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal(){
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.getElementById('modal-content').innerHTML = '';
+}
+function openRejectModal(id){ openModal(rejectModalHtml(id)); }
+
+function rejectModalHtml(id){
+  return '<h3 style="margin-top:0;color:var(--ink);">Reject Invoice</h3>' +
+    '<p style="font-size:0.83rem;color:var(--slate);">Give a short reason — this becomes a permanent part of the audit trail.</p>' +
+    '<textarea id="reject-reason" rows="3"></textarea>' +
+    '<div id="reject-error" style="color:var(--red);font-size:0.78rem;margin-top:4px;"></div>' +
+    '<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">' +
+      '<button class="btn btn-ghost" data-action="close-modal">Cancel</button>' +
+      '<button class="btn btn-reject" data-action="confirm-reject" data-id="' + id + '">Confirm Reject</button>' +
+    '</div>';
+}
+
+function checkinConfirmationHtml(inv){
+  const flagsHtml = inv.flags.length
+    ? '<ul style="margin:8px 0 0 18px;padding:0;">' + inv.flags.map(function(f){
+        const color = f.level==='high' ? 'var(--red)' : (f.level==='medium' ? 'var(--brass)' : 'var(--slate)');
+        return '<li style="margin:4px 0;color:' + color + ';">' + h(f.text) + '</li>';
+      }).join('') + '</ul>'
+    : '<p style="color:var(--slate);">No anomalies detected.</p>';
+  return '<h3 style="margin-top:0;color:var(--ink);">Invoice Checked In</h3>' +
+    '<p style="font-size:0.85rem;">' + h(inv.vendor) + ' · ' + h(inv.invoiceNumber) + ' · ' + fmtAmount(inv.amount) + '</p>' +
+    flagsHtml +
+    '<div style="margin-top:14px;text-align:right;"><button class="btn btn-primary" data-action="close-modal">Got it</button></div>';
+}
+
+// ---------- rendering ----------
+function renderHeader(){
+  const options = TEAM.map(function(m){
+    return '<option value="' + h(m.id) + '"' + (currentUserId===m.id?' selected':'') + '>' + h(m.name) + ' — ' + h(m.role) + '</option>';
+  }).join('');
+  return '<div class="register-header">' +
+    '<div class="register-title"><h1>Invoice Register</h1><div class="register-subtitle">Accounts Dept &middot; Control Log</div></div>' +
+    '<div class="identity-plate"><label>Signed in as</label>' +
+    '<select data-action="set-user"><option value="">— select your name —</option>' + options + '</select>' +
+    '</div></div>';
+}
+
+function renderTabs(){
+  const tabs = [['dashboard','Dashboard'],['checkin','Check In'],['approvals','Approvals'],['audit','Audit Trail'],['team','Team & Settings']];
+  return '<div class="tabs">' + tabs.map(function(t){
+    return '<button class="tab-btn ' + (activeTab===t[0]?'active':'') + '" data-action="set-tab" data-tab="' + t[0] + '">' + t[1] + '</button>';
+  }).join('') + '</div>';
+}
+
+function statusLabel(inv){
+  const map = { pending_l1:'Awaiting Approval', pending_l2:'Awaiting 2nd Approval', approved:'Approved — Unpaid', paid:'Paid', rejected:'Rejected' };
+  return map[inv.status] || inv.status;
+}
+
+function buildActionButtons(inv){
+  const user = getCurrentUser();
+  if(!user) return '<span style="color:var(--slate);font-size:0.75rem;">Select your name to act</span>';
+  const isOwnEntry = inv.enteredBy === user.id;
+
+  if(inv.status === 'pending_l1'){
+    if(user.role !== 'Approver' && user.role !== 'Finance Manager') return '<span style="color:var(--slate);font-size:0.75rem;">Approvers only</span>';
+    if(isOwnEntry) return '<span style="color:var(--red);font-size:0.75rem;">You entered this — needs another approver</span>';
+    return '<button class="btn btn-approve" data-action="approve" data-id="' + inv.id + '">Approve</button>' +
+           '<button class="btn btn-reject" data-action="open-reject" data-id="' + inv.id + '">Reject</button>';
+  }
+  if(inv.status === 'pending_l2'){
+    if(user.role !== 'Finance Manager') return '<span style="color:var(--slate);font-size:0.75rem;">Needs Finance Manager</span>';
+    if(isOwnEntry) return '<span style="color:var(--red);font-size:0.75rem;">You entered this — needs another approver</span>';
+    if(inv.approvals[0] && inv.approvals[0].by === user.id) return '<span style="color:var(--red);font-size:0.75rem;">You gave first approval — needs a different person</span>';
+    return '<button class="btn btn-approve" data-action="approve" data-id="' + inv.id + '">Final Approve</button>' +
+           '<button class="btn btn-reject" data-action="open-reject" data-id="' + inv.id + '">Reject</button>';
+  }
+  if(inv.status === 'approved'){
+    if(user.role !== 'Finance Manager') return '<span style="color:var(--slate);font-size:0.75rem;">Awaiting payment</span>';
+    if(isOwnEntry) return '<span style="color:var(--red);font-size:0.75rem;">You entered this — another Finance Manager must release payment</span>';
+    return '<button class="btn btn-pay" data-action="pay" data-id="' + inv.id + '">Mark Paid</button>';
+  }
+  return '—';
+}
+
+function renderInvoiceRow(inv, opts){
+  const flagsHtml = (inv.flags||[]).map(function(f){
+    const label = f.text.length > 30 ? f.text.slice(0,30) + '…' : f.text;
+    return '<span class="flag flag-' + f.level + '" title="' + h(f.text) + '">' + h(label) + '</span>';
+  }).join('');
+
+  let stampHtml = '';
+  if(inv.status === 'approved' || inv.status === 'paid') stampHtml += '<span class="stamp stamp-approved ' + (lastActionId===inv.id?'stamp-new':'') + '">Approved</span>';
+  if(inv.status === 'rejected') stampHtml += '<span class="stamp stamp-rejected ' + (lastActionId===inv.id?'stamp-new':'') + '">Rejected</span>';
+  if(inv.status === 'paid') stampHtml += ' <span class="stamp stamp-paid ' + (lastActionId===inv.id?'stamp-new':'') + '">Paid</span>';
+
+  return '<tr>' +
+    '<td>' + h(inv.vendor) + (inv.poNumber ? '<div style="font-size:0.7rem;color:var(--slate);">PO ' + h(inv.poNumber) + '</div>' : '') + '</td>' +
+    '<td style="font-family:\'IBM Plex Mono\',monospace;">' + h(inv.invoiceNumber) + '</td>' +
+    '<td style="font-family:\'IBM Plex Mono\',monospace;">' + h(inv.invoiceDate) + '</td>' +
+    '<td style="font-family:\'IBM Plex Mono\',monospace;">' + fmtAmount(inv.amount) + '</td>' +
+    '<td>' + h(memberName(inv.enteredBy)) + '</td>' +
+    '<td>' + (stampHtml || statusLabel(inv)) + '</td>' +
+    '<td>' + (flagsHtml || '—') + '</td>' +
+    (opts.showActions ? '<td>' + buildActionButtons(inv) + '</td>' : '') +
+    '</tr>';
+}
+
+function renderInvoiceTable(list, opts){
+  opts = opts || {};
+  if(list.length === 0) return '<p style="color:var(--slate);">No invoices here.</p>';
+  return '<table class="ledger-table"><thead><tr>' +
+    '<th>Vendor</th><th>Invoice #</th><th>Date</th><th>Amount</th><th>Entered By</th><th>Status</th><th>Flags</th>' +
+    (opts.showActions ? '<th>Action</th>' : '') +
+    '</tr></thead><tbody>' + list.map(function(inv){ return renderInvoiceRow(inv, opts); }).join('') + '</tbody></table>';
+}
+
+function computeCounts(){
+  const counts = { pending_l1:0, pending_l2:0, approved:0, paid:0, rejected:0, flagged:0 };
+  INVOICES.forEach(function(inv){
+    counts[inv.status] = (counts[inv.status]||0) + 1;
+    if(inv.flags && inv.flags.some(function(f){return f.level==='high';}) && inv.status!=='paid' && inv.status!=='rejected') counts.flagged++;
+  });
+  return counts;
+}
+
+function renderDashboard(){
+  const c = computeCounts();
+  const flaggedList = INVOICES.filter(function(inv){
+    return inv.flags && inv.flags.some(function(f){return f.level==='high';}) && inv.status!=='paid' && inv.status!=='rejected';
+  }).sort(function(a,b){ return b.enteredAt - a.enteredAt; });
+
+  return '<div class="ledger-page">' +
+    '<div class="kpi-grid">' +
+      '<div class="kpi-card"><div class="kpi-num">' + (c.pending_l1||0) + '</div><div class="kpi-label">Awaiting First Approval</div></div>' +
+      '<div class="kpi-card"><div class="kpi-num">' + (c.pending_l2||0) + '</div><div class="kpi-label">Awaiting Second Approval</div></div>' +
+      '<div class="kpi-card"><div class="kpi-num">' + (c.approved||0) + '</div><div class="kpi-label">Approved — Ready to Pay</div></div>' +
+      '<div class="kpi-card"><div class="kpi-num">' + (c.paid||0) + '</div><div class="kpi-label">Paid</div></div>' +
+      '<div class="kpi-card" style="border-left-color:var(--red);"><div class="kpi-num" style="color:var(--red);">' + (c.flagged||0) + '</div><div class="kpi-label">Flagged For Review</div></div>' +
+    '</div>' +
+    '<h2 style="color:var(--ink);margin-top:26px;">Needs Attention</h2>' +
+    (flaggedList.length===0 ? '<p style="color:var(--slate);">Nothing flagged right now — the register is clean.</p>' : renderInvoiceTable(flaggedList, {showActions:false})) +
+    '<div class="callout" style="margin-top:26px;">' +
+      '<strong>How this register prevents theft:</strong>' +
+      '<ul style="margin:8px 0 0 18px;padding:0;">' +
+        '<li>Nobody can approve or pay an invoice they entered themselves.</li>' +
+        '<li>Invoices of ' + fmtAmount(CONFIG.threshold) + ' or more need two different approvers.</li>' +
+        '<li>Every action is timestamped and kept permanently in the Audit Trail — nothing can be edited or deleted from this screen.</li>' +
+        '<li>Duplicate invoices, changed bank details, and threshold-dodging amounts are flagged automatically.</li>' +
+      '</ul>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderCheckin(){
+  const user = getCurrentUser();
+  return '<div class="ledger-page">' +
+    '<h2 style="color:var(--ink);">Check In an Invoice</h2>' +
+    (!user ? '<div class="callout callout-danger">Select your name in the top right before checking in an invoice — every entry is tied to a person.</div>' : '') +
+    '<form data-form="checkin" style="max-width:640px;">' +
+      '<div class="form-grid">' +
+        '<div><label>Vendor Name</label><input name="vendor" required></div>' +
+        '<div><label>Invoice Number</label><input name="invoiceNumber" required></div>' +
+        '<div><label>Invoice Date</label><input type="date" name="invoiceDate" required></div>' +
+        '<div><label>Amount (' + CONFIG.currency + ')</label><input type="number" step="0.01" min="0.01" name="amount" required></div>' +
+        '<div><label>PO Number (optional)</label><input name="poNumber"></div>' +
+        '<div><label>Vendor Bank — last 4 digits (optional)</label><input name="bankLast4" maxlength="4" pattern="[0-9]{4}"></div>' +
+      '</div>' +
+      '<div style="margin-top:12px;"><label>Description</label><textarea name="description" rows="2"></textarea></div>' +
+      '<button class="btn btn-primary" type="submit" style="margin-top:14px;" ' + (!user?'disabled':'') + '>Check In Invoice</button>' +
+    '</form>' +
+  '</div>';
+}
+
+function renderApprovals(){
+  const l1 = INVOICES.filter(function(i){ return i.status==='pending_l1'; });
+  const l2 = INVOICES.filter(function(i){ return i.status==='pending_l2'; });
+  const ready = INVOICES.filter(function(i){ return i.status==='approved'; });
+  return '<div class="ledger-page">' +
+    '<h2 style="color:var(--ink);">Awaiting First Approval</h2>' + renderInvoiceTable(l1, {showActions:true}) +
+    '<h2 style="color:var(--ink);margin-top:22px;">Awaiting Second Approval <span style="font-size:0.6em;color:var(--slate);">(≥ ' + fmtAmount(CONFIG.threshold) + ')</span></h2>' + renderInvoiceTable(l2, {showActions:true}) +
+    '<h2 style="color:var(--ink);margin-top:22px;">Approved — Ready to Pay</h2>' + renderInvoiceTable(ready, {showActions:true}) +
+  '</div>';
+}
+
+function renderAudit(){
+  let entries = [];
+  INVOICES.forEach(function(inv){
+    (inv.history||[]).forEach(function(ev){
+      entries.push(Object.assign({}, ev, { vendor:inv.vendor, invoiceNumber:inv.invoiceNumber }));
+    });
+  });
+  entries.sort(function(a,b){ return b.at - a.at; });
+
+  return '<div class="ledger-page">' +
+    '<h2 style="color:var(--ink);">Audit Trail <span style="font-size:0.6em;color:var(--slate);">— permanent, cannot be edited</span></h2>' +
+    '<table class="ledger-table"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Invoice</th><th>Note</th></tr></thead><tbody>' +
+    entries.map(function(e){
+      return '<tr>' +
+        '<td style="font-family:\'IBM Plex Mono\',monospace;font-size:0.76rem;">' + new Date(e.at).toLocaleString('en-IN') + '</td>' +
+        '<td>' + h(e.actorName) + ' <span style="color:var(--slate);font-size:0.7rem;">(' + h(e.actorRole) + ')</span></td>' +
+        '<td>' + h(e.action) + '</td>' +
+        '<td style="font-family:\'IBM Plex Mono\',monospace;">' + h(e.vendor) + ' &middot; ' + h(e.invoiceNumber) + '</td>' +
+        '<td style="font-size:0.8rem;">' + h(e.note||'') + '</td>' +
+      '</tr>';
+    }).join('') +
+    '</tbody></table>' +
+  '</div>';
+}
+
+function renderTeam(){
+  return '<div class="ledger-page">' +
+    '<h2 style="color:var(--ink);">Team</h2>' +
+    '<table class="ledger-table"><thead><tr><th>Name</th><th>Role</th><th></th></tr></thead><tbody>' +
+    TEAM.map(function(m){
+      return '<tr><td>' + h(m.name) + '</td><td>' + h(m.role) + '</td><td><button class="btn btn-ghost" data-action="remove-member" data-id="' + m.id + '">Remove</button></td></tr>';
+    }).join('') +
+    '</tbody></table>' +
+    '<form data-form="add-member" style="max-width:420px;margin-top:16px;">' +
+      '<div class="form-grid">' +
+        '<div><label>Name</label><input name="name" required></div>' +
+        '<div><label>Role</label><select name="role"><option>Clerk</option><option>Approver</option><option>Finance Manager</option></select></div>' +
+      '</div>' +
+      '<button class="btn btn-primary" type="submit" style="margin-top:10px;">Add Team Member</button>' +
+    '</form>' +
+    '<h2 style="color:var(--ink);margin-top:26px;">Approval Settings</h2>' +
+    '<form data-form="settings" style="max-width:420px;">' +
+      '<div class="form-grid">' +
+        '<div><label>Currency</label><select name="currency">' +
+          '<option value="INR"' + (CONFIG.currency==='INR'?' selected':'') + '>INR (₹)</option>' +
+          '<option value="USD"' + (CONFIG.currency==='USD'?' selected':'') + '>USD ($)</option>' +
+          '<option value="EUR"' + (CONFIG.currency==='EUR'?' selected':'') + '>EUR (€)</option>' +
+        '</select></div>' +
+        '<div><label>Second-Approval Threshold</label><input type="number" name="threshold" value="' + CONFIG.threshold + '" min="0" step="1"></div>' +
+      '</div>' +
+      '<button class="btn btn-primary" type="submit" style="margin-top:10px;">Save Settings</button>' +
+    '</form>' +
+    '<div class="callout" style="margin-top:26px;">' +
+      '<strong>Good to know:</strong> identity here is a name picker, not a password login — it works because everyone agrees to select their own name honestly. For bank-grade security, pair this register with real user accounts. What it does give you: nobody can silently approve or pay their own entries, every action is timestamped under a name, and that record can\'t be edited afterward.' +
+    '</div>' +
+  '</div>';
+}
+
+function renderTabContent(){
+  if(activeTab==='dashboard') return renderDashboard();
+  if(activeTab==='checkin') return renderCheckin();
+  if(activeTab==='approvals') return renderApprovals();
+  if(activeTab==='audit') return renderAudit();
+  if(activeTab==='team') return renderTeam();
+  return '';
+}
+
+function render(){
+  document.getElementById('app').innerHTML = renderHeader() + renderTabs() + renderTabContent();
+}
+
+// ---------- events ----------
+document.getElementById('app').addEventListener('click', function(e){
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if(action === 'set-tab'){ activeTab = btn.dataset.tab; render(); }
+  else if(action === 'approve'){ handleApprove(id); }
+  else if(action === 'open-reject'){ openRejectModal(id); }
+  else if(action === 'pay'){ handlePay(id); }
+  else if(action === 'remove-member'){ handleRemoveMember(id); }
+});
+
+document.getElementById('app').addEventListener('change', function(e){
+  if(e.target.matches('[data-action="set-user"]')){
+    currentUserId = e.target.value || null;
+    render();
+  }
+});
+
+document.getElementById('app').addEventListener('submit', function(e){
+  e.preventDefault();
+  const form = e.target.closest('form');
+  if(!form) return;
+  const type = form.dataset.form;
+  const fd = new FormData(form);
+  if(type === 'checkin') handleCheckin(fd);
+  else if(type === 'add-member') handleAddMember(fd);
+  else if(type === 'settings') handleSettings(fd);
+});
+
+document.getElementById('modal-overlay').addEventListener('click', function(e){
+  if(e.target.id === 'modal-overlay'){ closeModal(); return; }
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  if(btn.dataset.action === 'close-modal'){ closeModal(); }
+  else if(btn.dataset.action === 'confirm-reject'){
+    const reasonEl = document.getElementById('reject-reason');
+    const reason = reasonEl.value.trim();
+    if(!reason){ document.getElementById('reject-error').textContent = 'Please give a reason.'; return; }
+    handleReject(btn.dataset.id, reason);
+    closeModal();
+  }
+});
+
+loadAll();
+</script>
+</body>
+</html>
