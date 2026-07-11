@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    @apply bg-paper text-ink-dark font-sans antialiased;
+    margin: 0;
+    padding: 0;
+  }
+  
+  ::selection {
+    background-color: #C7D2FE; /* indigo-200 */
+    color: #0F172A; /* slate-900 */
+  }
+  
+  /* Focus outlines */
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+    @apply outline-none ring-2 ring-brass ring-offset-2 ring-offset-paper;
+  }
+}
+
+/* Custom scrollbar styling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
