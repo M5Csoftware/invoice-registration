@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ sessionUser, onLogout }) => {
           <Receipt size={20} />
         </div>
         <div className="flex flex-col">
-          <h1 className="text-white text-xl sm:text-2xl font-serif font-black tracking-tight flex items-center gap-2">
+          <h1 className="text-white text-xl sm:text-2xl font-heading font-bold tracking-tight flex items-center gap-2">
             M5 Invoice Registration
           </h1>
           <p className="text-[10px] text-slate mt-0.5 font-medium tracking-wide">
