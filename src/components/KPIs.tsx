@@ -75,14 +75,14 @@ export const KPIs: React.FC<KPIsProps> = ({
             }`}
           >
             <div className="flex justify-between items-center">
-              <span className={`font-mono text-2xl font-bold leading-none ${card.textColor}`}>
+              <span className={`font-heading text-2xl font-bold leading-none ${card.textColor}`}>
                 {card.value}
               </span>
               <div className={`p-1.5 rounded-full flex items-center justify-center ${badgeBg}`}>
                 <Icon size={13} />
               </div>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate mt-4 block leading-tight">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 mt-4 block leading-tight">
               {card.label}
             </span>
           </div>
