@@ -26,15 +26,16 @@ export default {
           DEFAULT: '#16A34A',
         },
         slate: {
-          DEFAULT: '#475569',
+          DEFAULT: '#334155',
         },
         card: {
           DEFAULT: '#FFFFFF',
         }
       },
       fontFamily: {
-        sans: ['"Inter"', '"IBM Plex Sans"', 'sans-serif'],
-        serif: ['Fraunces', 'serif'],
+        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+        ui: ['"DM Sans"', '"Plus Jakarta Sans"', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
       },
       animation: {
