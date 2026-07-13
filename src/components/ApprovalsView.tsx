@@ -14,6 +14,7 @@ interface ApprovalsViewProps {
   onRejectClick: (id: string) => void;
   onPay: (id: string) => void;
   onInvoiceClick: (invoice: Invoice) => void;
+  onAddBankDetails?: (invoice: Invoice) => void;
 }
 
 export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
@@ -27,6 +28,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
   onRejectClick,
   onPay,
   onInvoiceClick,
+  onAddBankDetails,
 }) => {
   const pendingVerification = invoices.filter((i) => i.status === 'pending_verification');
   const pendingApproval = invoices.filter((i) => i.status === 'pending_approval');
@@ -36,16 +38,16 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
     <div className="space-y-8">
       <div className="flex items-center gap-2 border-b border-slate-200/50 pb-2">
         <ClipboardCheck size={20} className="text-brass" />
-        <h2 className="text-lg font-serif font-black text-ink-dark">
+        <h2 className="text-xl font-heading font-bold text-ink-dark">
           Approvals Queue
         </h2>
       </div>
 
       {/* Step 1: Verifier queue */}
       <div className="space-y-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate border-l-2 border-l-blue-400 pl-2">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 border-l-2 border-l-blue-400 pl-2">
           Awaiting Verification ({pendingVerification.length})
-          <span className="text-[10px] text-slate/60 font-normal ml-2">— Verifier reviews invoice with vendor</span>
+          <span className="text-xs text-slate-600 font-normal ml-2">— Verifier reviews invoice with vendor</span>
         </h3>
         <InvoiceTable
           invoices={pendingVerification}
@@ -59,14 +61,15 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
           onRejectClick={onRejectClick}
           onPay={onPay}
           onInvoiceClick={onInvoiceClick}
+          onAddBankDetails={onAddBankDetails}
         />
       </div>
 
       {/* Step 2: Admin approval queue */}
       <div className="space-y-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate border-l-2 border-l-brass pl-2 flex items-center gap-2">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 border-l-2 border-l-brass pl-2 flex items-center gap-2">
           Awaiting Admin Approval ({pendingApproval.length})
-          <span className="text-[10px] text-slate/70 font-normal font-mono">
+          <span className="text-xs text-slate-600 font-normal font-mono">
             (threshold ≥ {formatAmount(config.threshold, config.currency)} requires second sign-off)
           </span>
         </h3>
@@ -82,12 +85,13 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
           onRejectClick={onRejectClick}
           onPay={onPay}
           onInvoiceClick={onInvoiceClick}
+          onAddBankDetails={onAddBankDetails}
         />
       </div>
 
       {/* Step 3: Pay queue */}
       <div className="space-y-2">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate border-l-2 border-l-green pl-2">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 border-l-2 border-l-green pl-2">
           Approved — Ready to Pay ({approved.length})
         </h3>
         <InvoiceTable
@@ -102,6 +106,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
           onRejectClick={onRejectClick}
           onPay={onPay}
           onInvoiceClick={onInvoiceClick}
+          onAddBankDetails={onAddBankDetails}
         />
       </div>
     </div>
