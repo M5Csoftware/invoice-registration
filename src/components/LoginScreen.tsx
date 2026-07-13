@@ -47,9 +47,9 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
             <div className="w-10 h-10 bg-brass rounded-lg flex items-center justify-center shadow-md">
               <FileText size={22} className="text-ink-dark" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">M5 Invoice Registration</span>
+            <span className="text-base font-heading font-bold tracking-tight text-white">M5 Invoice Registration</span>
           </div>
-          <h1 className="text-2xl font-extrabold leading-snug text-white mb-4">
+          <h1 className="text-3xl font-heading font-bold leading-tight text-white mb-4">
             M5 Invoice<br />Registration
           </h1>
           <p className="text-slate-400 text-sm leading-relaxed">
@@ -82,11 +82,11 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
           <div className="w-9 h-9 bg-ink-dark rounded-lg flex items-center justify-center">
             <FileText size={18} className="text-brass" />
           </div>
-          <span className="text-lg font-bold text-ink-dark">M5 Invoice Registration</span>
+          <span className="text-base font-heading font-bold text-ink-dark">M5 Invoice Registration</span>
         </div>
 
         <div className="w-full max-w-sm">
-          <h2 className="text-2xl font-extrabold text-ink-dark mb-1">Sign in</h2>
+          <h2 className="text-2xl font-heading font-bold text-ink-dark mb-1">Sign in</h2>
           <p className="text-sm text-slate mb-8">Enter your credentials to access the system.</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -154,30 +154,26 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
             </button>
           </form>
 
-          {/* Demo credentials hint */}
+          {/* Dynamic credentials hint */}
           <div className="mt-8 p-4 bg-card border border-ink/10 rounded-lg">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate mb-2">
-              Demo Credentials
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+              Available Accounts
             </p>
-            <div className="space-y-1">
-              {[
-                { label: 'Admin', user: 'admin', pass: 'admin123' },
-                { label: 'Verifier', user: 'verifier', pass: 'verifier123' },
-                { label: 'User', user: 'user', pass: 'user123' },
-              ].map(({ label, user, pass }) => (
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {team.slice(0, 8).map((m) => (
                 <button
-                  key={user}
+                  key={m.id}
                   type="button"
                   onClick={() => {
-                    setUsername(user);
-                    setPassword(pass);
+                    setUsername(m.username);
+                    setPassword(m.password);
                     setError('');
                   }}
                   className="w-full flex justify-between items-center text-xs px-3 py-1.5 rounded hover:bg-brass/10 text-ink-dark transition cursor-pointer"
                 >
-                  <span className="font-semibold">{label}</span>
-                  <span className="font-mono text-slate">
-                    {user} / {pass}
+                  <span className="font-semibold truncate max-w-[110px]">{m.name}</span>
+                  <span className="font-mono text-slate-600 text-xs ml-2 font-medium">
+                    {m.username} · {m.role}
                   </span>
                 </button>
               ))}
