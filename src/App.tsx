@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import type { AppConfig, TeamMember, Invoice, Flag } from './types';
+import type { AppConfig, TeamMember, Invoice, Flag, BankDetails } from './types';
 import { getStorageItem, setStorageItem } from './services/storage';
 import { LoginScreen } from './components/LoginScreen';
-import { Header } from './components/Header';
+import { Sidebar, ALL_NAV_TABS } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
 import { CheckInView } from './components/CheckInView';
 import { ApprovalsView } from './components/ApprovalsView';
@@ -10,15 +10,27 @@ import { AuditView } from './components/AuditView';
 import { TeamSettingsView } from './components/TeamSettingsView';
 import { Modal } from './components/Modal';
 import { InvoiceDetailModal } from './components/InvoiceDetailModal';
-import { formatAmount } from './components/InvoiceTable';
-import { LayoutDashboard, FilePlus, ClipboardCheck, History, Users } from 'lucide-react';
+import { BankDetailsModal } from './components/BankDetailsModal';
+import { InvoiceTable, formatAmount } from './components/InvoiceTable';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const uid = (prefix: string) => {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 };
 
-/** Default seed data: 1 Admin, 1 Verifier, 1 User */
+const MASTER_ADMIN_USERNAME = import.meta.env.VITE_MASTER_ADMIN_USERNAME || 'masteradmin';
+const MASTER_ADMIN_PASSWORD = import.meta.env.VITE_MASTER_ADMIN_PASSWORD || 'masteradmin123';
+
+/** Default seed data: 1 Master Admin, 1 Admin, 1 Verifier, 1 User */
 const DEFAULT_TEAM: TeamMember[] = [
+  {
+    id: 'mem_master',
+    name: 'Master Admin',
+    username: MASTER_ADMIN_USERNAME,
+    password: MASTER_ADMIN_PASSWORD,
+    role: 'Master Admin',
+  },
   {
     id: 'mem_admin',
     name: 'Admin',
@@ -57,6 +69,7 @@ export default function App() {
   const [rejectReason, setRejectReason] = useState<string>('');
   const [rejectError, setRejectError] = useState<string>('');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [bankModalInvoice, setBankModalInvoice] = useState<Invoice | null>(null);
 
   // Initial Load
   useEffect(() => {
@@ -73,12 +86,31 @@ export default function App() {
           parsedTeam = JSON.parse(storedTeam);
         }
 
-        // Seed default team if no team or team lacks credentials (migration)
+        // Seed default team if no team or team lacks credentials
         const hasCredentials = parsedTeam.length > 0 && parsedTeam[0].username;
         if (!hasCredentials) {
           parsedTeam = DEFAULT_TEAM;
-          await setStorageItem('team', JSON.stringify(parsedTeam));
         }
+
+        // Always ensure Master Admin account exists and matches .env credentials
+        const masterIdx = parsedTeam.findIndex((m) => m.role === 'Master Admin' || m.username === MASTER_ADMIN_USERNAME);
+        if (masterIdx === -1) {
+          parsedTeam.unshift({
+            id: 'mem_master',
+            name: 'Master Admin',
+            username: MASTER_ADMIN_USERNAME,
+            password: MASTER_ADMIN_PASSWORD,
+            role: 'Master Admin',
+          });
+        } else {
+          parsedTeam[masterIdx] = {
+            ...parsedTeam[masterIdx],
+            username: MASTER_ADMIN_USERNAME,
+            password: MASTER_ADMIN_PASSWORD,
+            role: 'Master Admin',
+          };
+        }
+        await setStorageItem('team', JSON.stringify(parsedTeam));
         setTeam(parsedTeam);
 
         const storedInvoices = await getStorageItem('invoices');
@@ -183,6 +215,9 @@ export default function App() {
     vendor: string;
     invoiceNumber: string;
     invoiceDate: string;
+    taxableAmount: number;
+    taxOption: import('./types').TaxOption;
+    taxAmount: number;
     amount: number;
     poNumber: string;
     bankLast4: string;
@@ -196,6 +231,9 @@ export default function App() {
       vendor: formData.vendor.trim(),
       invoiceNumber: formData.invoiceNumber.trim(),
       invoiceDate: formData.invoiceDate,
+      taxableAmount: formData.taxableAmount,
+      taxOption: formData.taxOption,
+      taxAmount: formData.taxAmount,
       amount: formData.amount,
       poNumber: formData.poNumber.trim(),
       bankLast4: formData.bankLast4.trim(),
@@ -232,6 +270,7 @@ export default function App() {
     await saveInvoices(updatedInvoices);
     setConfirmInvoice(newInvoice);
     setActiveTab('checkin');
+    toast.success(`Invoice ${formData.invoiceNumber} checked in successfully!`, { icon: <span>📄</span> });
   };
 
   /** Verifier marks invoice as verified, passing it to pending_approval */
@@ -263,6 +302,7 @@ export default function App() {
 
     setLastActionId(id);
     await saveInvoices(updatedInvoices);
+    toast.success(`Invoice verified successfully`, { icon: <span>✅</span> });
   };
 
   /** Admin approves an invoice in pending_approval state */
@@ -295,6 +335,7 @@ export default function App() {
 
     setLastActionId(id);
     await saveInvoices(updatedInvoices);
+    toast.success(`Invoice approved!`, { icon: <span>👍</span> });
   };
 
   const handleRejectConfirm = async () => {
@@ -325,6 +366,7 @@ export default function App() {
 
     setLastActionId(rejectInvoiceId);
     await saveInvoices(updatedInvoices);
+    toast.error(`Invoice rejected`, { icon: <span>❌</span> });
 
     // Reset reject states
     setRejectInvoiceId(null);
@@ -353,6 +395,52 @@ export default function App() {
 
     setLastActionId(id);
     await saveInvoices(updatedInvoices);
+    toast.success(`Invoice marked as paid!`, { icon: <span>💵</span> });
+  };
+
+  const handleSaveBankDetails = async (
+    invoiceId: string,
+    bankData: {
+      bankName: string;
+      accountName: string;
+      accountNumber: string;
+      ifscCode: string;
+    }
+  ) => {
+    if (!sessionUser) return;
+    const inv = invoices.find((i) => i.id === invoiceId);
+    if (!inv) return;
+
+    const bankLast4 = bankData.accountNumber.slice(-4);
+    const bankDetails: BankDetails = {
+      ...bankData,
+      addedAt: Date.now(),
+      addedBy: sessionUser.id,
+    };
+
+    const updatedHistory = [...(inv.history || [])];
+    updatedHistory.push({
+      at: Date.now(),
+      actorId: sessionUser.id,
+      actorName: sessionUser.name,
+      actorRole: sessionUser.role,
+      action: 'Bank details attached',
+      note: `${bankData.bankName} (${bankData.ifscCode}) · Account: **** ${bankLast4}`,
+    });
+
+    const updatedInvoices = invoices.map((i) =>
+      i.id === invoiceId
+        ? {
+            ...i,
+            bankLast4,
+            bankDetails,
+            history: updatedHistory,
+          }
+        : i
+    );
+
+    await saveInvoices(updatedInvoices);
+    toast.success(`Bank details saved for ${inv.vendor}`, { icon: <span>🏦</span> });
   };
 
   const handleAddMember = async (name: string, username: string, password: string, role: import('./types').Role) => {
@@ -375,6 +463,24 @@ export default function App() {
     await saveTeam(updatedTeam);
   };
 
+  const handleEditMember = async (
+    id: string,
+    name: string,
+    username: string,
+    password: string,
+    role: import('./types').Role
+  ) => {
+    const updatedTeam = team.map((m) =>
+      m.id === id ? { ...m, name, username, password, role } : m
+    );
+    // If current user edited themselves, sync session
+    if (sessionUser?.id === id) {
+      const updated = updatedTeam.find((m) => m.id === id);
+      if (updated) setSessionUser(updated);
+    }
+    await saveTeam(updatedTeam);
+  };
+
   const handleSaveSettings = async (currency: AppConfig['currency'], threshold: number) => {
     const updatedConfig = { currency, threshold };
     await saveConfig(updatedConfig);
@@ -382,6 +488,7 @@ export default function App() {
 
   const handleLogin = (member: TeamMember) => {
     setSessionUser(member);
+    toast.success(`Welcome back, ${member.name}!`, { icon: <span>👋</span> });
     // Set default tab based on role
     if (member.role === 'User') {
       setActiveTab('checkin');
@@ -393,12 +500,13 @@ export default function App() {
   const handleLogout = () => {
     setSessionUser(null);
     setActiveTab('dashboard');
+    toast.info('Signed out of session');
   };
 
   // Rendering loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center p-6 text-slate font-serif font-black text-lg">
+      <div className="min-h-screen bg-paper flex items-center justify-center p-6 text-slate font-heading font-semibold text-base">
         Loading register…
       </div>
     );
@@ -409,17 +517,7 @@ export default function App() {
     return <LoginScreen team={team} onLogin={handleLogin} />;
   }
 
-  // Navigation items - RBAC restricted
-  const allNavTabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Verifier'] },
-    { id: 'checkin', label: 'Check In', icon: FilePlus, roles: ['Admin', 'User'] },
-    { id: 'myinvoices', label: 'My Invoices', icon: FilePlus, roles: ['User'] },
-    { id: 'approvals', label: 'Approvals', icon: ClipboardCheck, roles: ['Admin', 'Verifier'] },
-    { id: 'audit', label: 'Audit Trail', icon: History, roles: ['Admin', 'Verifier'] },
-    { id: 'team', label: 'Team & Settings', icon: Users, roles: ['Admin'] },
-  ];
-
-  const navTabs = allNavTabs.filter((t) => t.roles.includes(sessionUser.role));
+  const navTabs = ALL_NAV_TABS.filter((t) => t.roles.includes(sessionUser.role));
 
   // Ensure active tab is accessible for this role
   const isTabAccessible = navTabs.some((t) => t.id === activeTab);
@@ -429,90 +527,99 @@ export default function App() {
   const myInvoices = invoices.filter((i) => i.enteredBy === sessionUser.id);
 
   return (
-    <div className="min-h-screen w-full bg-paper flex flex-col">
-      {/* Header */}
-      <Header
-        team={team}
-        currentUserId={sessionUser.id}
-        onUserChange={() => {}}
+    <div className="min-h-screen w-full bg-paper flex">
+      {/* ── Sidebar ─────────────────────────────────── */}
+      <Sidebar
         sessionUser={sessionUser}
+        activeTab={effectiveTab}
+        navTabs={navTabs}
+        onTabChange={setActiveTab}
         onLogout={handleLogout}
       />
 
-      {/* Tabs Bar */}
-      <div className="flex bg-ink-dark border-b border-ink/20 px-6 overflow-x-auto select-none no-scrollbar">
-        {navTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = effectiveTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-3.5 text-xs sm:text-sm font-semibold transition-all duration-150 border-t-3 border-transparent cursor-pointer ${
-                isActive
-                  ? 'bg-paper text-ink-dark border-t-brass shadow-sm'
-                  : 'text-brass-light hover:text-white hover:bg-ink'
-              }`}
-            >
-              <Icon size={14} className={isActive ? 'text-brass' : 'text-brass-light'} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* ── Main content ─────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Page title bar — h-16 matches sidebar logo zone */}
+        <div className="bg-white border-b border-slate-200/80 px-8 h-16 flex items-center shadow-sm md:pl-8 pl-14">
+          <div>
+            <h1 className="text-xl font-heading font-bold text-ink-dark leading-tight">
+              {navTabs.find((t) => t.id === effectiveTab)?.label ?? 'Dashboard'}
+            </h1>
+            <p className="text-xs text-slate-600 font-medium tracking-wide mt-0.5">
+              M5 Invoice Registration · Internal Use Only
+            </p>
+          </div>
+        </div>
 
-      {/* Main Content Area */}
-      <main className="flex-grow p-6 sm:p-8 bg-paper relative">
-        {effectiveTab === 'dashboard' && (
-          <DashboardView invoices={invoices} team={team} config={config} onInvoiceClick={setSelectedInvoice} />
-        )}
+        {/* Scrollable content */}
+        <main className="flex-1 p-6 sm:p-8 bg-paper overflow-y-auto">
+          {effectiveTab === 'dashboard' && (
+            <DashboardView invoices={invoices} team={team} config={config} onInvoiceClick={setSelectedInvoice} />
+          )}
 
-        {effectiveTab === 'checkin' && (
-          <CheckInView currentUser={sessionUser} config={config} onSubmit={handleCheckin} />
-        )}
+          {effectiveTab === 'checkin' && (
+            <CheckInView currentUser={sessionUser} config={config} onSubmit={handleCheckin} />
+          )}
 
-        {effectiveTab === 'myinvoices' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-serif font-black text-ink-dark">My Invoices</h2>
-            <p className="text-xs text-slate">Track the approval status of your submitted invoices.</p>
-            {/* Reuse InvoiceTable but show only user's invoices without action buttons */}
-            <DashboardView
-              invoices={myInvoices}
+          {effectiveTab === 'myinvoices' && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-heading font-bold text-ink-dark">My Invoices</h2>
+              <p className="text-xs text-slate">Track the approval status of your submitted invoices.</p>
+              {myInvoices.length === 0 ? (
+                <p className="text-slate text-xs italic bg-white border border-slate-200/60 rounded-lg p-6 shadow-sm">
+                  You haven't submitted any invoices yet.
+                </p>
+              ) : (
+                <InvoiceTable
+                  invoices={myInvoices}
+                  currentUser={sessionUser}
+                  team={team}
+                  config={config}
+                  lastActionId={null}
+                  showActions={false}
+                  onVerify={() => {}}
+                  onApprove={() => {}}
+                  onRejectClick={() => {}}
+                  onPay={() => {}}
+                  onInvoiceClick={setSelectedInvoice}
+                  onAddBankDetails={(inv) => setBankModalInvoice(inv)}
+                />
+              )}
+            </div>
+          )}
+
+          {effectiveTab === 'approvals' && (
+            <ApprovalsView
+              invoices={invoices}
+              currentUser={sessionUser}
               team={team}
               config={config}
+              lastActionId={lastActionId}
+              onVerify={handleVerify}
+              onApprove={handleApprove}
+              onRejectClick={setRejectInvoiceId}
+              onPay={handlePay}
               onInvoiceClick={setSelectedInvoice}
+              onAddBankDetails={(inv) => setBankModalInvoice(inv)}
             />
-          </div>
-        )}
+          )}
 
-        {effectiveTab === 'approvals' && (
-          <ApprovalsView
-            invoices={invoices}
-            currentUser={sessionUser}
-            team={team}
-            config={config}
-            lastActionId={lastActionId}
-            onVerify={handleVerify}
-            onApprove={handleApprove}
-            onRejectClick={setRejectInvoiceId}
-            onPay={handlePay}
-            onInvoiceClick={setSelectedInvoice}
-          />
-        )}
+          {effectiveTab === 'audit' && <AuditView invoices={invoices} />}
 
-        {effectiveTab === 'audit' && <AuditView invoices={invoices} />}
-
-        {effectiveTab === 'team' && (
-          <TeamSettingsView
-            team={team}
-            config={config}
-            onAddMember={handleAddMember}
-            onRemoveMember={handleRemoveMember}
-            onSaveSettings={handleSaveSettings}
-            currentUserId={sessionUser.id}
-          />
-        )}
-      </main>
+          {effectiveTab === 'team' && (
+            <TeamSettingsView
+              team={team}
+              config={config}
+              onAddMember={handleAddMember}
+              onRemoveMember={handleRemoveMember}
+              onEditMember={handleEditMember}
+              onSaveSettings={handleSaveSettings}
+              currentUserId={sessionUser?.id ?? null}
+              isMasterAdmin={sessionUser?.role === 'Master Admin'}
+            />
+          )}
+        </main>
+      </div>
 
       {/* Confirmation Modal */}
       <Modal
@@ -522,13 +629,20 @@ export default function App() {
       >
         {confirmInvoice && (
           <div className="space-y-4">
-            <p className="text-sm font-medium text-ink-dark bg-card p-3 rounded border border-ink/10">
-              <span className="font-semibold">{confirmInvoice.vendor}</span> &middot;{' '}
-              <span className="font-mono">{confirmInvoice.invoiceNumber}</span> &middot;{' '}
-              <span className="font-mono">{formatAmount(confirmInvoice.amount, config.currency)}</span>
-            </p>
+            <div className="text-xs font-medium text-ink-dark bg-card p-3 rounded border border-ink/10 space-y-1">
+              <div>
+                <span className="font-semibold">{confirmInvoice.vendor}</span> &middot;{' '}
+                <span className="font-mono">{confirmInvoice.invoiceNumber}</span>
+              </div>
+              <div className="font-mono text-slate-700">
+                Taxable: {formatAmount(confirmInvoice.taxableAmount || confirmInvoice.amount / 1.18, config.currency)} &middot; Tax (18% {confirmInvoice.taxOption === 'CGST_SGST' ? 'CGST+SGST' : 'IGST'}): {formatAmount(confirmInvoice.taxAmount || confirmInvoice.amount - (confirmInvoice.amount / 1.18), config.currency)}
+              </div>
+              <div className="font-mono font-bold text-ink-dark text-sm border-t border-slate-100 pt-1 mt-1">
+                Total Amount: {formatAmount(confirmInvoice.amount, config.currency)}
+              </div>
+            </div>
             <div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate block mb-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-1">
                 Anomaly Check
               </span>
               {confirmInvoice.flags && confirmInvoice.flags.length > 0 ? (
@@ -629,6 +743,27 @@ export default function App() {
           setSelectedInvoice(null);
         }}
         onPay={handlePay}
+        onAddBankDetails={(inv) => setBankModalInvoice(inv)}
+      />
+
+      {/* Add Bank Details Modal */}
+      <BankDetailsModal
+        isOpen={bankModalInvoice !== null}
+        onClose={() => setBankModalInvoice(null)}
+        invoice={bankModalInvoice}
+        onSave={handleSaveBankDetails}
+      />
+
+      {/* Toast notifications */}
+      <ToastContainer
+        position="bottom-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        theme="light"
+        toastClassName="text-xs font-semibold"
       />
     </div>
   );
