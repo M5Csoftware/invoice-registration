@@ -35,7 +35,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }
       {/* Content panel */}
       <div className="relative w-full max-w-lg bg-paper border border-ink rounded-lg shadow-2xl p-6 overflow-hidden transform transition-all duration-200">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-serif font-bold text-ink">
+          <h3 className="text-base font-heading font-semibold text-ink-dark">
             {title}
           </h3>
           <button
