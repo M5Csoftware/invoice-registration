@@ -44,7 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       />
 
       <div className="bg-paper rounded-lg">
-        <h2 className="text-lg font-serif font-black text-ink-dark flex items-center gap-2 mb-3">
+        <h2 className="text-xl font-heading font-bold text-ink-dark flex items-center gap-2 mb-3">
           Needs Attention
         </h2>
         {flaggedList.length === 0 ? (
@@ -70,7 +70,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Audit policy note */}
       <div className="border border-slate-200 border-l-4 border-l-slate-400 bg-white p-5 rounded-lg shadow-sm">
-        <h3 className="font-bold text-ink-dark text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2">
+        <h3 className="font-heading font-semibold text-sm text-ink-dark uppercase tracking-wider flex items-center gap-2">
           <Shield size={16} className="text-slate-400" />
           Audit Policy
         </h3>
