@@ -12,7 +12,8 @@ import {
   Clock,
   ShieldCheck,
   Ban,
-  Wallet
+  Wallet,
+  Landmark,
 } from 'lucide-react';
 
 interface InvoiceDetailModalProps {
@@ -25,6 +26,7 @@ interface InvoiceDetailModalProps {
   onApprove: (id: string) => void;
   onRejectClick: (id: string) => void;
   onPay: (id: string) => void;
+  onAddBankDetails?: (invoice: Invoice) => void;
 }
 
 export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
@@ -37,6 +39,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
   onApprove,
   onRejectClick,
   onPay,
+  onAddBankDetails,
 }) => {
   if (!invoice) return null;
 
@@ -135,13 +138,10 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
     if (!currentUser || isOwnEntry) return false;
 
     if (isPendingVerification) {
-      return currentUser.role === 'Verifier' || currentUser.role === 'Admin';
+      return currentUser.role === 'Verifier' || currentUser.role === 'Admin' || currentUser.role === 'Master Admin';
     }
-    if (isPendingApproval) {
-      return currentUser.role === 'Admin';
-    }
-    if (isApproved) {
-      return currentUser.role === 'Admin';
+    if (isPendingApproval || isApproved) {
+      return currentUser.role === 'Admin' || currentUser.role === 'Master Admin';
     }
     return false;
   };
@@ -153,17 +153,17 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         {/* Title and Amount */}
         <div className="flex justify-between items-start border-b border-slate-100 pb-4">
           <div>
-            <h4 className="text-lg font-bold text-ink-dark">{invoice.vendor}</h4>
+            <h4 className="text-base font-heading font-semibold text-ink-dark">{invoice.vendor}</h4>
             <p className="text-xs text-slate mt-0.5 flex items-center gap-1 font-mono">
               Invoice Ref: <span className="font-semibold text-ink">{invoice.invoiceNumber}</span>
             </p>
           </div>
           <div className="text-right">
-            <span className="text-xl font-mono font-black text-ink">
+            <span className="text-xl font-mono font-bold text-ink">
               {formatAmount(invoice.amount, config.currency)}
             </span>
             {isRejected && (
-              <span className="text-[10px] font-bold text-red bg-red/10 border border-red/20 px-2.5 py-0.5 rounded-full block mt-1.5 font-mono select-none">
+              <span className="text-xs font-bold text-red bg-red/10 border border-red/20 px-2.5 py-0.5 rounded-full block mt-1.5 font-mono select-none">
                 REJECTED
               </span>
             )}
@@ -172,7 +172,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
         {/* Visual Lifecycle Stepper */}
         <div className="bg-slate-50/50 border border-slate-200/50 p-4 rounded-lg">
-          <h5 className="text-[10px] font-bold uppercase tracking-wider text-slate mb-4">
+          <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-4">
             Approval Status
           </h5>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
@@ -199,7 +199,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                   </div>
                   <div className="flex flex-col text-left">
                     <span className={`text-xs ${statusClass}`}>{step.label}</span>
-                    <span className="text-[9px] text-slate mt-0.5 leading-tight">{step.desc}</span>
+                    <span className="text-xs text-slate-600 mt-0.5 leading-tight">{step.desc}</span>
                   </div>
                 </div>
               );
@@ -210,53 +210,82 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
         {/* Summary Details Grid */}
         <div className="grid grid-cols-2 gap-4 bg-white border border-slate-200/60 p-4 rounded-lg shadow-sm text-xs">
           <div>
-            <span className="text-[9px] uppercase font-bold tracking-wider text-slate block mb-1">Invoice Date</span>
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">Taxable Amount</span>
+            <div className="font-mono font-semibold text-ink-dark">
+              {formatAmount(invoice.taxableAmount || (invoice.amount / 1.18), config.currency)}
+            </div>
+          </div>
+          <div>
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">Tax Breakdown</span>
+            <div className="font-mono text-ink-dark">
+              {invoice.taxOption === 'CGST_SGST' ? (
+                <span>
+                  CGST (9%): {formatAmount((invoice.taxAmount || (invoice.amount - invoice.amount / 1.18)) / 2, config.currency)}
+                  <br />
+                  SGST (9%): {formatAmount((invoice.taxAmount || (invoice.amount - invoice.amount / 1.18)) / 2, config.currency)}
+                </span>
+              ) : (
+                <span>
+                  IGST (18%): {formatAmount(invoice.taxAmount || (invoice.amount - invoice.amount / 1.18), config.currency)}
+                </span>
+              )}
+            </div>
+          </div>
+          <div>
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">Invoice Date</span>
             <div className="flex items-center gap-1.5 font-medium text-ink-dark">
-              <Calendar size={13} className="text-slate/75" />
+              <Calendar size={13} className="text-slate-500" />
               {invoice.invoiceDate}
             </div>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold tracking-wider text-slate block mb-1">PO Number</span>
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">PO Number</span>
             <div className="flex items-center gap-1.5 font-medium text-ink-dark">
-              <FileText size={13} className="text-slate/75" />
-              {invoice.poNumber || <span className="text-slate/40 italic">Not Linked</span>}
+              <FileText size={13} className="text-slate-500" />
+              {invoice.poNumber || <span className="text-slate-500 italic">Not Linked</span>}
             </div>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold tracking-wider text-slate block mb-1">Audit Creator</span>
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">Audit Creator</span>
             <div className="flex items-center gap-1.5 font-medium text-ink-dark">
-              <User size={13} className="text-slate/75" />
+              <User size={13} className="text-slate-500" />
               <div>
                 <div>{getMemberName(invoice.enteredBy)}</div>
-                <div className="text-[9px] text-slate font-mono font-normal">
+                <div className="text-xs text-slate-600 font-mono font-normal">
                   {getMemberRole(invoice.enteredBy)}
                 </div>
               </div>
             </div>
           </div>
           <div>
-            <span className="text-[9px] uppercase font-bold tracking-wider text-slate block mb-1">Account details</span>
-            <div className="flex items-center gap-1.5 font-medium text-ink-dark">
-              <CreditCard size={13} className="text-slate/75" />
-              {invoice.bankLast4 ? (
+            <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">Account details</span>
+            <div className="flex items-start gap-1.5 font-medium text-ink-dark">
+              <CreditCard size={13} className="text-slate-500 mt-0.5" />
+              {invoice.bankDetails ? (
+                <div className="font-mono text-xs space-y-0.5">
+                  <div className="font-semibold">{invoice.bankDetails.bankName}</div>
+                  <div className="text-slate-700">Holder: {invoice.bankDetails.accountName}</div>
+                  <div className="text-slate-700">A/C: {invoice.bankDetails.accountNumber}</div>
+                  <div className="text-slate-600">IFSC: {invoice.bankDetails.ifscCode}</div>
+                </div>
+              ) : invoice.bankLast4 ? (
                 <span className="font-mono">Bank last 4: **** {invoice.bankLast4}</span>
               ) : (
-                <span className="text-slate/40 italic">Not Supplied</span>
+                <span className="text-slate-500 italic">Not Supplied</span>
               )}
             </div>
           </div>
           {invoice.description && (
             <div className="col-span-2 pt-2 border-t border-slate-100">
-              <span className="text-[9px] uppercase font-bold tracking-wider text-slate block mb-1">Description</span>
-              <p className="text-slate font-medium leading-relaxed italic">{invoice.description}</p>
+              <span className="text-xs uppercase font-bold tracking-wider text-slate-700 block mb-1">Description</span>
+              <p className="text-slate-800 font-medium leading-relaxed italic">{invoice.description}</p>
             </div>
           )}
         </div>
 
         {/* Anomaly Check Flags */}
         <div>
-          <span className="text-[9px] font-bold uppercase tracking-wider text-slate block mb-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-2">
             Flags ({invoice.flags?.length || 0})
           </span>
           {invoice.flags && invoice.flags.length > 0 ? (
@@ -268,7 +297,7 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                 } else if (flag.level === 'medium') {
                   badgeClass = 'bg-brass/5 border-brass/25 text-brass border-l-4 border-l-brass';
                 } else {
-                  badgeClass = 'bg-slate/5 border-slate-200 text-slate border-l-4 border-l-slate';
+                  badgeClass = 'bg-slate-100 border-slate-300 text-slate-800 border-l-4 border-l-slate-500';
                 }
 
                 return (
@@ -292,15 +321,15 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
 
         {/* History Timelines log */}
         <div className="pt-2 border-t border-slate-100">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-slate block mb-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-3">
             Audit Trail
           </span>
           <div className="space-y-4">
             {invoice.history?.map((h, idx) => (
               <div key={idx} className="flex items-start gap-3 text-xs">
                 <div className="relative flex flex-col items-center">
-                  <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] text-slate flex-shrink-0">
-                    <Clock size={10} />
+                  <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs text-slate-600 flex-shrink-0">
+                    <Clock size={11} />
                   </div>
                   {idx < (invoice.history.length - 1) && (
                     <div className="w-0.5 bg-slate-200 h-8 mt-1" />
@@ -309,15 +338,15 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
                 <div className="flex-grow">
                   <div className="flex justify-between items-start gap-2">
                     <span className="font-semibold text-ink-dark">{h.action}</span>
-                    <span className="font-mono text-[10px] text-slate">
+                    <span className="font-mono text-xs text-slate-600">
                       {new Date(h.at).toLocaleDateString('en-IN')} {new Date(h.at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <div className="text-slate text-[11px] mt-0.5">
-                    Authorized actor: <span className="font-medium text-ink">{h.actorName}</span> <span className="text-[10px] font-mono">({h.actorRole})</span>
+                  <div className="text-slate-700 text-xs mt-0.5">
+                    Authorized actor: <span className="font-semibold text-ink-dark">{h.actorName}</span> <span className="text-xs font-mono text-slate-600">({h.actorRole})</span>
                   </div>
                   {h.note && (
-                    <p className="mt-1 bg-slate-50 border border-slate-100 p-2 rounded text-[11px] text-slate italic max-w-full break-words">
+                    <p className="mt-1 bg-slate-50 border border-slate-100 p-2.5 rounded text-xs text-slate-800 italic max-w-full break-words leading-relaxed">
                       {h.note}
                     </p>
                   )}
@@ -353,15 +382,28 @@ export const InvoiceDetailModal: React.FC<InvoiceDetailModalProps> = ({
               </>
             )}
             {isApproved && (
-              <button
-                onClick={() => {
-                  onPay(invoice.id);
-                  onClose();
-                }}
-                className="flex items-center gap-1.5 bg-brass hover:bg-brass-light text-ink-dark font-bold text-xs px-4 py-2.5 rounded shadow-sm transition-colors cursor-pointer"
-              >
-                <Wallet size={14} /> Release Payment
-              </button>
+              <>
+                {onAddBankDetails && (
+                  <button
+                    onClick={() => {
+                      onAddBankDetails(invoice);
+                      onClose();
+                    }}
+                    className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2.5 rounded shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Landmark size={14} /> {invoice.bankDetails ? 'Edit Bank Details' : '+ Add Bank Details'}
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    onPay(invoice.id);
+                    onClose();
+                  }}
+                  className="flex items-center gap-1.5 bg-brass hover:bg-brass-light text-ink-dark font-bold text-xs px-4 py-2.5 rounded shadow-sm transition-colors cursor-pointer"
+                >
+                  <Wallet size={14} /> Release Payment
+                </button>
+              </>
             )}
           </div>
         )}
