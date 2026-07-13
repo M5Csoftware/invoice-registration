@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Invoice, TeamMember, AppConfig } from '../types';
-import { Search, Eye } from 'lucide-react';
+import { Search, Eye, Landmark } from 'lucide-react';
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -14,6 +14,7 @@ interface InvoiceTableProps {
   onRejectClick: (id: string) => void;
   onPay: (id: string) => void;
   onInvoiceClick: (invoice: Invoice) => void;
+  onAddBankDetails?: (invoice: Invoice) => void;
 }
 
 export const formatAmount = (amount: number, currency: 'INR' | 'USD' | 'EUR') => {
@@ -39,6 +40,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   onRejectClick,
   onPay,
   onInvoiceClick,
+  onAddBankDetails,
 }) => {
   const [verifyNotes, setVerifyNotes] = useState<Record<string, string>>({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +48,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
 
   const getMemberName = (id: string) => {
     const member = team.find((t) => t.id === id);
-    return member ? member.name : '(removed team member)';
+    return member ? member.name : id;
   };
 
   const getMemberRole = (id: string) => {
@@ -109,8 +111,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
     else if (inv.status === 'approved' || inv.status === 'paid') s2 = 'bg-green';
 
     // Payment dot
-    if (inv.status === 'approved') s3 = 'bg-brass/80 animate-pulse';
-    else if (inv.status === 'paid') s3 = 'bg-green';
+    if (inv.status === 'paid') s3 = 'bg-green';
 
     return (
       <div className="flex items-center gap-1.5 mt-1.5" title={`Workflow: ${getStatusLabel(inv.status)}`}>
@@ -123,115 +124,117 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
 
   const renderActionButtons = (inv: Invoice) => {
     if (!currentUser) {
-      return <span className="text-[11px] text-slate/75 italic">Not logged in</span>;
+      return <span className="text-xs text-slate-600 italic">Not logged in</span>;
     }
 
     const isOwnEntry = inv.enteredBy === currentUser.id;
+    const isVerifier = currentUser.role === 'Verifier' || currentUser.role === 'Admin' || currentUser.role === 'Master Admin';
+    const isAdmin = currentUser.role === 'Admin' || currentUser.role === 'Master Admin';
 
     // Step 1: Verifier verifies the invoice
     if (inv.status === 'pending_verification') {
-      if (currentUser.role !== 'Verifier' && currentUser.role !== 'Admin') {
-        return <span className="text-[11px] text-slate/70">Awaiting verifier</span>;
+      if (isVerifier) {
+        return (
+          <div className="space-y-1.5 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+            <textarea
+              value={verifyNotes[inv.id] || ''}
+              onChange={(e) =>
+                setVerifyNotes({ ...verifyNotes, [inv.id]: e.target.value })
+              }
+              placeholder="Add verification notes..."
+              className="w-full border border-slate-200 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none text-ink-dark"
+              rows={2}
+            />
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => onVerify(inv.id, verifyNotes[inv.id] || '')}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-3 py-1.5 rounded transition-colors cursor-pointer"
+              >
+                Verify & Pass
+              </button>
+              <button
+                onClick={() => onRejectClick(inv.id)}
+                className="bg-red hover:bg-red/90 text-white font-semibold text-xs px-3 py-1.5 rounded transition-colors cursor-pointer"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        );
       }
-      const noteKey = inv.id;
-      return (
-        <div className="flex flex-col gap-1.5 min-w-[160px]" onClick={(e) => e.stopPropagation()}>
-          <textarea
-            rows={2}
-            placeholder="Verification notes…"
-            value={verifyNotes[noteKey] || ''}
-            onChange={(e) =>
-              setVerifyNotes((prev) => ({ ...prev, [noteKey]: e.target.value }))
-            }
-            className="w-full border border-slate-200 rounded px-2 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none text-ink-dark"
-          />
-          <div className="flex gap-1">
+      return <span className="text-xs text-slate-600 font-medium">Awaiting verifier</span>;
+    }
+
+    // Step 2: Admin approves after verification
+    if (inv.status === 'pending_approval') {
+      if (isAdmin) {
+        if (isOwnEntry) {
+          return (
+            <span className="text-xs text-red font-semibold leading-tight block max-w-[140px]">
+              Requires admin approval (cannot approve own invoice)
+            </span>
+          );
+        }
+        return (
+          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onVerify(inv.id, verifyNotes[noteKey] || '');
-                setVerifyNotes((prev) => ({ ...prev, [noteKey]: '' }));
-              }}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors cursor-pointer"
+              onClick={() => onApprove(inv.id)}
+              className="bg-green hover:bg-green/90 text-white font-semibold text-xs px-3 py-1.5 rounded transition-colors cursor-pointer"
             >
-              Mark Verified
+              Approve
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRejectClick(inv.id);
-              }}
-              className="bg-red hover:bg-red/90 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors cursor-pointer"
+              onClick={() => onRejectClick(inv.id)}
+              className="bg-red hover:bg-red/90 text-white font-semibold text-xs px-3 py-1.5 rounded transition-colors cursor-pointer"
             >
               Reject
             </button>
+          </div>
+        );
+      }
+      return <span className="text-xs text-slate-600 font-medium">Awaiting admin</span>;
+    }
+
+    // Step 3: Admin adds bank details & pays after approval
+    if (inv.status === 'approved') {
+      return (
+        <div className="flex flex-col gap-1.5 items-start" onClick={(e) => e.stopPropagation()}>
+          {inv.bankDetails ? (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">
+              <Landmark size={13} className="text-emerald-600" />
+              <span>{inv.bankDetails.bankName} (**** {inv.bankDetails.accountNumber.slice(-4)})</span>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {onAddBankDetails && (
+              <button
+                onClick={() => onAddBankDetails(inv)}
+                className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer ${
+                  inv.bankDetails
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                }`}
+              >
+                <Landmark size={13} />
+                {inv.bankDetails ? 'Edit Bank Details' : '+ Add Bank Details'}
+              </button>
+            )}
+
+            {isAdmin && !isOwnEntry && (
+              <button
+                onClick={() => onPay(inv.id)}
+                className="bg-brass hover:bg-brass-light text-white font-semibold text-xs px-3 py-1.5 rounded transition-colors cursor-pointer"
+              >
+                Mark as Paid
+              </button>
+            )}
           </div>
         </div>
       );
     }
 
-    // Step 2: Admin approves after verification
-    if (inv.status === 'pending_approval') {
-      if (currentUser.role !== 'Admin') {
-        return <span className="text-[11px] text-slate/70">Awaiting admin</span>;
-      }
-      if (isOwnEntry) {
-        return (
-          <span className="text-[10px] text-red font-semibold leading-tight block max-w-[130px]">
-            Own entry blocked
-          </span>
-        );
-      }
-      return (
-        <div className="flex gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onApprove(inv.id);
-            }}
-            className="bg-green hover:bg-green/90 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors cursor-pointer"
-          >
-            Approve
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRejectClick(inv.id);
-            }}
-            className="bg-red hover:bg-red/90 text-white font-bold text-[10px] px-2 py-1 rounded transition-colors cursor-pointer"
-          >
-            Reject
-          </button>
-        </div>
-      );
-    }
-
-    // Step 3: Admin pays after approval
-    if (inv.status === 'approved') {
-      if (currentUser.role !== 'Admin') {
-        return <span className="text-[11px] text-slate/75 italic">Awaiting payment</span>;
-      }
-      if (isOwnEntry) {
-        return (
-          <span className="text-[10px] text-red font-semibold leading-tight block max-w-[130px]">
-            Release authorization required
-          </span>
-        );
-      }
-      return (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPay(inv.id);
-          }}
-          className="bg-brass hover:bg-brass-light text-white font-bold text-[10px] px-2.5 py-1 rounded transition-colors cursor-pointer"
-        >
-          Pay Release
-        </button>
-      );
-    }
-
-    return <span className="text-slate/60">—</span>;
+    return <span className="text-slate-500">—</span>;
   };
 
   const filterTabs = [
@@ -273,8 +276,8 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               }`}
             >
               {tab.label}
-              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                statusFilter === tab.id ? 'bg-indigo-50 text-brass' : 'bg-slate-200 text-slate'
+              <span className={`text-xs px-2 py-0.5 rounded-full font-mono font-bold ${
+                statusFilter === tab.id ? 'bg-indigo-50 text-brass' : 'bg-slate-200 text-slate-700'
               }`}>
                 {tab.count}
               </span>
@@ -310,7 +313,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                         <Eye size={12} className="text-slate/60 hover:text-brass transition-colors" />
                       </div>
                       {inv.poNumber && (
-                        <div className="text-[10px] text-slate font-mono mt-0.5">
+                        <div className="text-xs text-slate-600 font-mono mt-0.5">
                           PO {inv.poNumber}
                         </div>
                       )}
@@ -319,35 +322,35 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                       <div className="font-mono font-bold text-ink-dark text-sm">
                         {formatAmount(inv.amount, config.currency)}
                       </div>
-                      <div className="text-[9px] text-slate font-mono mt-0.5">
+                      <div className="text-xs text-slate-600 font-mono mt-0.5">
                         {inv.invoiceDate}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                    <div className="text-[11px] text-slate">
-                      Actor: <span className="font-medium text-ink-dark">{getMemberName(inv.enteredBy)}</span>
+                    <div className="text-xs text-slate-600">
+                      Actor: <span className="font-semibold text-ink-dark">{getMemberName(inv.enteredBy)}</span>
                     </div>
                     <div className="flex flex-col items-end">
                       {(inv.status === 'pending_verification' || inv.status === 'pending_approval') ? (
-                        <span className="font-semibold text-brass text-[11px] bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded">
+                        <span className="font-semibold text-brass text-xs bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded">
                           {getStatusLabel(inv.status)}
                         </span>
                       ) : (
                         <div className="flex flex-wrap gap-1 items-center">
                           {(inv.status === 'approved' || inv.status === 'paid') && (
-                            <span className="text-green text-[10px] font-bold bg-green/5 border border-green/10 px-2 py-0.5 rounded">
+                            <span className="text-green text-xs font-bold bg-green/5 border border-green/10 px-2 py-0.5 rounded">
                               Approved
                             </span>
                           )}
                           {inv.status === 'rejected' && (
-                            <span className="text-red text-[10px] font-bold bg-red/5 border border-red/10 px-2 py-0.5 rounded">
+                            <span className="text-red text-xs font-bold bg-red/5 border border-red/10 px-2 py-0.5 rounded">
                               Rejected
                             </span>
                           )}
                           {inv.status === 'paid' && (
-                            <span className="text-brass text-[10px] font-bold bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded ml-1">
+                            <span className="text-brass text-xs font-bold bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded ml-1">
                               Paid
                             </span>
                           )}
@@ -366,14 +369,14 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                         } else if (flag.level === 'medium') {
                           colorClass = 'bg-brass/5 text-brass border border-brass/10';
                         } else {
-                          colorClass = 'bg-slate/5 text-slate border border-slate/10';
+                          colorClass = 'bg-slate-100 text-slate-700 border border-slate-300';
                         }
 
                         return (
                           <span
                             key={idx}
                             title={flag.text}
-                            className={`inline-block text-[9px] font-medium px-2.5 py-0.5 rounded select-none ${colorClass}`}
+                            className={`inline-block text-xs font-semibold px-2 py-0.5 rounded select-none ${colorClass}`}
                           >
                             {flag.text.length > 25 ? flag.text.substring(0, 25) + '…' : flag.text}
                           </span>
@@ -397,15 +400,15 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <table className="w-full border-collapse text-left text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/70 select-none">
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[130px]">Vendor</th>
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[90px]">Invoice #</th>
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[90px]">Date</th>
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[100px]">Amount</th>
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[110px]">Entered By</th>
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[130px]">Workflow Status</th>
-                  <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[150px]">Flags</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[130px]">Vendor</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[90px]">Invoice #</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[90px]">Date</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[100px]">Amount</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[110px]">Entered By</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[130px]">Workflow Status</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[150px]">Flags</th>
                   {showActions && (
-                    <th className="font-sans text-[10px] uppercase font-bold tracking-wider text-slate px-4 py-3 min-w-[140px]">Action</th>
+                    <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[140px]">Action</th>
                   )}
                 </tr>
               </thead>
@@ -425,10 +428,10 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                       <td className="px-4 py-3.5 align-top">
                         <div className="font-bold text-ink-dark flex items-center gap-1.5">
                           {inv.vendor}
-                          <Eye size={12} className="opacity-0 group-hover:opacity-100 text-slate/50 hover:text-brass transition-all" />
+                          <Eye size={12} className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-brass transition-all" />
                         </div>
                         {inv.poNumber && (
-                          <div className="text-[10px] text-slate font-mono mt-0.5">
+                          <div className="text-xs text-slate-600 font-mono mt-0.5">
                             PO {inv.poNumber}
                           </div>
                         )}
@@ -436,15 +439,15 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                       <td className="px-4 py-3.5 align-top font-mono font-medium text-ink-dark">
                         {inv.invoiceNumber}
                       </td>
-                      <td className="px-4 py-3.5 align-top font-mono text-slate">
+                      <td className="px-4 py-3.5 align-top font-mono text-slate-700">
                         {inv.invoiceDate}
                       </td>
                       <td className="px-4 py-3.5 align-top font-mono font-bold text-ink-dark">
                         {formatAmount(inv.amount, config.currency)}
                       </td>
-                      <td className="px-4 py-3.5 align-top text-slate">
-                        <div className="font-medium text-ink-dark">{getMemberName(inv.enteredBy)}</div>
-                        <div className="text-[9px] text-slate font-mono">{getMemberRole(inv.enteredBy)}</div>
+                      <td className="px-4 py-3.5 align-top text-slate-700">
+                        <div className="font-semibold text-ink-dark">{getMemberName(inv.enteredBy)}</div>
+                        <div className="text-xs text-slate-600 font-mono">{getMemberRole(inv.enteredBy)}</div>
                       </td>
                       <td className="px-4 py-3.5 align-top relative">
                         <div className="flex flex-col gap-0.5 items-start">
@@ -489,14 +492,14 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                               } else if (flag.level === 'medium') {
                                 colorClass = 'bg-brass/5 text-brass border border-brass/10';
                               } else {
-                                colorClass = 'bg-slate/5 text-slate border border-slate/10';
+                                colorClass = 'bg-slate-100 text-slate-700 border border-slate-300';
                               }
 
                               return (
                                 <span
                                   key={idx}
                                   title={flag.text}
-                                  className={`inline-block text-[9px] font-medium px-2.5 py-0.5 rounded select-none cursor-help transition-all ${colorClass}`}
+                                  className={`inline-block text-xs font-semibold px-2 py-0.5 rounded select-none cursor-help transition-all ${colorClass}`}
                                 >
                                   {trimmedLabel}
                                 </span>
@@ -504,7 +507,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                             })}
                           </div>
                         ) : (
-                          <span className="text-slate-400 font-medium text-[11px]">—</span>
+                          <span className="text-slate-500 font-medium text-xs">—</span>
                         )}
                       </td>
                       {showActions && (
