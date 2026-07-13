@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import type { TeamMember, AppConfig } from '../types';
+import type { TeamMember, AppConfig, TaxOption } from '../types';
 import { FilePlus, AlertTriangle, Upload, X, Image } from 'lucide-react';
+import { formatAmount } from './InvoiceTable';
 
 interface CheckInViewProps {
   currentUser: TeamMember | null;
@@ -9,6 +10,9 @@ interface CheckInViewProps {
     vendor: string;
     invoiceNumber: string;
     invoiceDate: string;
+    taxableAmount: number;
+    taxOption: TaxOption;
+    taxAmount: number;
     amount: number;
     poNumber: string;
     bankLast4: string;
@@ -25,7 +29,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const [vendor, setVendor] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState('');
-  const [amount, setAmount] = useState('');
+  const [taxableAmount, setTaxableAmount] = useState('');
+  const [taxOption, setTaxOption] = useState<TaxOption>('IGST');
   const [poNumber, setPoNumber] = useState('');
   const [bankLast4, setBankLast4] = useState('');
   const [description, setDescription] = useState('');
@@ -33,6 +38,11 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const [imageFileName, setImageFileName] = useState<string>('');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto tax calculations
+  const parsedTaxable = parseFloat(taxableAmount) || 0;
+  const calculatedTax = parsedTaxable > 0 ? parsedTaxable * 0.18 : 0;
+  const calculatedTotal = parsedTaxable + calculatedTax;
 
   const handleFileRead = (file: File) => {
     if (!file) return;
@@ -59,14 +69,16 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
-    const parsedAmount = parseFloat(amount);
-    if (!vendor || !invoiceNumber || !invoiceDate || isNaN(parsedAmount) || parsedAmount <= 0) return;
+    if (!vendor || !invoiceNumber || !invoiceDate || parsedTaxable <= 0) return;
 
     onSubmit({
       vendor,
       invoiceNumber,
       invoiceDate,
-      amount: parsedAmount,
+      taxableAmount: parsedTaxable,
+      taxOption,
+      taxAmount: calculatedTax,
+      amount: calculatedTotal,
       poNumber,
       bankLast4,
       description,
@@ -77,7 +89,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
     setVendor('');
     setInvoiceNumber('');
     setInvoiceDate('');
-    setAmount('');
+    setTaxableAmount('');
+    setTaxOption('IGST');
     setPoNumber('');
     setBankLast4('');
     setDescription('');
@@ -89,8 +102,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   const disabled = !currentUser;
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-serif font-black text-ink-dark flex items-center gap-2">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <h2 className="text-xl font-heading font-bold text-ink-dark flex items-center gap-2">
         <FilePlus size={18} className="text-brass" />
         Check In an Invoice
       </h2>
@@ -104,10 +117,10 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleFormSubmit} className="max-w-2xl bg-white border border-slate-200/60 rounded-lg p-6 shadow-sm space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form onSubmit={handleFormSubmit} className="w-full bg-white border border-slate-200/60 rounded-lg p-6 sm:p-8 shadow-sm space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
               Vendor Name *
             </label>
             <input
@@ -121,7 +134,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             />
           </div>
           <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
               Invoice Number *
             </label>
             <input
@@ -135,7 +148,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             />
           </div>
           <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
               Invoice Date *
             </label>
             <input
@@ -148,8 +161,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             />
           </div>
           <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
-              Amount ({config.currency}) *
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
+              Taxable Amount ({config.currency}) *
             </label>
             <input
               type="number"
@@ -157,14 +170,48 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               min="0.01"
               required
               disabled={disabled}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              value={taxableAmount}
+              onChange={(e) => setTaxableAmount(e.target.value)}
               placeholder="0.00"
               className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-sm"
             />
           </div>
           <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
+              Tax Option *
+            </label>
+            <select
+              disabled={disabled}
+              value={taxOption}
+              onChange={(e) => setTaxOption(e.target.value as TaxOption)}
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark shadow-sm cursor-pointer"
+            >
+              <option value="IGST">IGST (18%)</option>
+              <option value="CGST_SGST">CGST + SGST (9% + 9%)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
+              Total Amount (Calculated)
+            </label>
+            <input
+              type="text"
+              readOnly
+              value={formatAmount(calculatedTotal, config.currency)}
+              className="w-full bg-slate-100/90 text-ink-dark font-mono font-bold border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm shadow-sm cursor-not-allowed select-none"
+            />
+            {parsedTaxable > 0 && (
+              <p className="text-xs text-slate-600 mt-1 font-mono">
+                {taxOption === 'IGST' ? (
+                  <span>Tax (18% IGST): +{formatAmount(calculatedTax, config.currency)}</span>
+                ) : (
+                  <span>Tax (9% CGST + 9% SGST): +{formatAmount(calculatedTax / 2, config.currency)} + {formatAmount(calculatedTax / 2, config.currency)}</span>
+                )}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
               PO Number (optional)
             </label>
             <input
@@ -177,7 +224,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             />
           </div>
           <div>
-            <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
               Vendor Bank — last 4 digits (optional)
             </label>
             <input
@@ -194,7 +241,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
         </div>
 
         <div>
-          <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
             Description
           </label>
           <textarea
@@ -209,7 +256,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
 
         {/* Invoice Image Upload */}
         <div>
-          <label className="text-[9px] font-bold uppercase tracking-wider text-slate mb-1.5 block">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
             Invoice Image / Scan
           </label>
           {invoiceImage ? (
@@ -259,7 +306,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
                   ? 'Drop to upload'
                   : 'Click or drag & drop an invoice image'}
               </span>
-              <span className="text-[10px] text-slate/60">PNG, JPG, PDF preview supported</span>
+              <span className="text-xs text-slate-600 font-medium">PNG, JPG, PDF preview supported</span>
             </div>
           )}
           <input
