@@ -35,8 +35,8 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
   const approved = invoices.filter((i) => i.status === 'approved');
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-2 border-b border-slate-200/50 pb-2">
+    <div className="w-full space-y-8">
+      <div className="flex items-center gap-2 border-b border-slate-300 pb-2">
         <ClipboardCheck size={20} className="text-brass" />
         <h2 className="text-xl font-heading font-bold text-ink-dark">
           Approvals Queue
@@ -47,7 +47,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
       <div className="space-y-2">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 border-l-2 border-l-blue-400 pl-2">
           Awaiting Verification ({pendingVerification.length})
-          <span className="text-xs text-slate-600 font-normal ml-2">— Verifier reviews invoice with vendor</span>
+          <span className="text-xs text-slate-700 font-normal ml-2">— Verifier reviews invoice with vendor</span>
         </h3>
         <InvoiceTable
           invoices={pendingVerification}
@@ -69,7 +69,7 @@ export const ApprovalsView: React.FC<ApprovalsViewProps> = ({
       <div className="space-y-2">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700 border-l-2 border-l-brass pl-2 flex items-center gap-2">
           Awaiting Admin Approval ({pendingApproval.length})
-          <span className="text-xs text-slate-600 font-normal font-mono">
+          <span className="text-xs text-slate-700 font-normal font-mono">
             (threshold ≥ {formatAmount(config.threshold, config.currency)} requires second sign-off)
           </span>
         </h3>
