@@ -93,36 +93,6 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
     return matchesSearch && matchesFilter;
   });
 
-  // Small inline stepper: Verify → Approve → Pay
-  const renderInlineProgress = (inv: Invoice) => {
-    const isRejected = inv.status === 'rejected';
-
-    let s1 = 'bg-slate-200'; // Verification
-    let s2 = 'bg-slate-200'; // Approval
-    let s3 = 'bg-slate-200'; // Payment
-
-    // Verification dot
-    if (inv.status === 'pending_verification') s1 = 'bg-blue-400 animate-pulse';
-    else if (isRejected) s1 = 'bg-red';
-    else s1 = 'bg-green';
-
-    // Approval dot
-    if (inv.status === 'pending_approval') s2 = 'bg-brass/80 animate-pulse';
-    else if (isRejected) s2 = 'bg-slate-200';
-    else if (inv.status === 'approved' || inv.status === 'paid') s2 = 'bg-green';
-
-    // Payment dot
-    if (inv.status === 'paid') s3 = 'bg-green';
-
-    return (
-      <div className="flex items-center gap-1.5 mt-1.5" title={`Workflow: ${getStatusLabel(inv.status)}`}>
-        <span className={`w-2 h-2 rounded-full ${s1}`} title="Verify" />
-        <span className={`w-2 h-2 rounded-full ${s2}`} title="Approve" />
-        <span className={`w-2 h-2 rounded-full ${s3}`} title="Pay" />
-      </div>
-    );
-  };
-
   const renderActionButtons = (inv: Invoice) => {
     if (!currentUser) {
       return <span className="text-xs text-slate-700 italic">Not logged in</span>;
