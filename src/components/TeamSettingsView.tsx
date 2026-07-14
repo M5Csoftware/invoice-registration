@@ -21,7 +21,7 @@ const roleColors: Record<Role, string> = {
   'Master Admin': 'bg-amber-50 text-amber-800 border border-amber-300 font-bold',
   Admin: 'bg-brass/10 text-brass border border-brass/20',
   Verifier: 'bg-blue-50 text-blue-700 border border-blue-200',
-  User: 'bg-slate-100 text-slate-600 border border-slate-200',
+  User: 'bg-slate-100 text-slate-700 border border-slate-300',
 };
 
 const roleIcons: Record<Role, React.ReactNode> = {
@@ -141,14 +141,14 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
   };
 
   const inputCls =
-    'w-full bg-white border border-slate-200/80 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass text-ink-dark shadow-sm';
+    'w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass text-ink-dark shadow-md';
   const labelCls = 'text-xs font-bold uppercase tracking-wider text-slate-700 mb-1 block';
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       {/* ── Team Section ─────────────────────────────────────────── */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 border-b border-slate-200/50 pb-2">
+        <div className="flex items-center gap-2 border-b border-slate-300 pb-2">
           <Users size={18} className="text-brass" />
           <h2 className="text-xl font-heading font-bold text-ink-dark">Team Member Accounts</h2>
         </div>
@@ -157,10 +157,10 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
         <div className="block sm:hidden space-y-2">
           {team.map((m) => (
             <div key={m.id}>
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3.5 shadow-sm flex items-center justify-between">
+              <div className="bg-white border border-slate-300 rounded-lg p-3.5 shadow-md flex items-center justify-between">
                 <div>
                   <div className="font-bold text-sm text-ink-dark">{m.name}</div>
-                  <div className="text-xs text-slate-600 font-mono mt-0.5">@{m.username}</div>
+                  <div className="text-xs text-slate-700 font-mono mt-0.5">@{m.username}</div>
                   <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded mt-1 ${roleColors[m.role]}`}>
                     {roleIcons[m.role]} {m.role}
                   </span>
@@ -189,7 +189,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
 
               {/* Inline edit panel (mobile) */}
               {editingId === m.id && (
-                <div className="mt-1 border border-brass/30 bg-brass/5 rounded-lg p-4 shadow-sm">
+                <div className="mt-1 border border-brass/30 bg-brass/5 rounded-lg p-4 shadow-md">
                   <EditForm
                     editName={editName} setEditName={setEditName}
                     editUsername={editUsername} setEditUsername={setEditUsername}
@@ -211,10 +211,10 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
         </div>
 
         {/* ── Desktop table ── */}
-        <div className="hidden sm:block overflow-x-auto border border-slate-200/60 rounded-lg bg-white shadow-sm w-full">
+        <div className="hidden sm:block overflow-x-auto border border-slate-300 rounded-lg bg-white shadow-md w-full">
           <table className="w-full border-collapse text-left text-xs sm:text-sm">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 select-none">
+              <tr className="border-b border-slate-300 bg-slate-50/70 select-none">
                 <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3">Name</th>
                 <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3">Username</th>
                 <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3">Role</th>
@@ -226,7 +226,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
                 <React.Fragment key={m.id}>
                   <tr className={`transition-colors ${editingId === m.id ? 'bg-brass/5' : 'hover:bg-slate-50/40'}`}>
                     <td className="px-4 py-3 font-semibold text-ink-dark">{m.name}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-slate-500">@{m.username}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] text-slate-600">@{m.username}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded ${roleColors[m.role]}`}>
                         {roleIcons[m.role]} {m.role}
@@ -251,7 +251,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-500 italic px-2">
+                        <span className="text-xs text-slate-600 italic px-2">
                           {m.id === currentUserId ? 'You' : 'Protected'}
                         </span>
                       )}
@@ -288,7 +288,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
         {/* ── Add member form ── */}
         <form
           onSubmit={handleAddMemberSubmit}
-          className="max-w-2xl bg-white border border-slate-200/60 rounded-lg p-6 shadow-sm space-y-4"
+          className="max-w-4xl mx-auto bg-white border border-slate-300 rounded-lg p-6 shadow-md space-y-4"
         >
           <h3 className="font-bold text-xs uppercase tracking-wider text-ink-dark flex items-center gap-1.5 border-b border-slate-100 pb-2">
             <UserPlus size={14} className="text-brass" /> Add New Account
@@ -352,7 +352,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
                 )}
               </select>
               {!isMasterAdmin && (
-                <p className="text-[11px] text-slate-500 mt-1 italic">
+                <p className="text-[11px] text-slate-600 mt-1 italic">
                   Note: Only Master Admin can create Admin accounts.
                 </p>
               )}
@@ -361,7 +361,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
           {formError && <p className="text-red text-xs font-semibold">{formError}</p>}
           <button
             type="submit"
-            className="bg-brass hover:bg-brass-light text-white font-semibold text-xs px-4 py-2.5 rounded shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+            className="bg-brass hover:bg-brass-light text-white font-semibold text-xs px-4 py-2.5 rounded shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <UserPlus size={14} /> Create Account
           </button>
@@ -369,14 +369,14 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
       </div>
 
       {/* ── Settings Section ──────────────────────────────────────── */}
-      <div className="space-y-4 pt-6 border-t border-slate-200/60">
-        <div className="flex items-center gap-2 border-b border-slate-200/50 pb-2">
+      <div className="space-y-4 pt-6 border-t border-slate-300">
+        <div className="flex items-center gap-2 border-b border-slate-300 pb-2">
           <Settings size={18} className="text-brass" />
           <h2 className="text-xl font-heading font-bold text-ink-dark">System Control Settings</h2>
         </div>
         <form
           onSubmit={handleSettingsSubmit}
-          className="max-w-2xl bg-white border border-slate-200/60 rounded-lg p-6 shadow-sm space-y-4"
+          className="max-w-4xl mx-auto bg-white border border-slate-300 rounded-lg p-6 shadow-md space-y-4"
         >
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -406,7 +406,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
           </div>
           <button
             type="submit"
-            className="bg-brass hover:bg-brass-light text-white font-semibold text-xs px-4 py-2 rounded shadow-sm transition-colors cursor-pointer"
+            className="bg-brass hover:bg-brass-light text-white font-semibold text-xs px-4 py-2 rounded shadow-md transition-colors cursor-pointer"
           >
             Save Settings
           </button>
@@ -414,7 +414,7 @@ export const TeamSettingsView: React.FC<TeamSettingsViewProps> = ({
       </div>
 
       {/* ── Info Callout ───────────────────────────────────────────── */}
-      <div className="border border-slate-200 border-l-4 border-l-brass bg-white p-4 rounded-lg text-xs text-slate font-medium w-full flex items-start gap-2.5 shadow-sm">
+      <div className="border border-slate-300 border-l-4 border-l-brass bg-white p-4 rounded-lg text-xs text-slate font-medium w-full flex items-start gap-2.5 shadow-md">
         <Info size={16} className="text-brass flex-shrink-0 mt-0.5" />
         <p className="leading-relaxed text-slate">
           <strong>Role Access Summary:</strong> <strong>Admin</strong> has full access and creates accounts.{' '}
@@ -480,7 +480,7 @@ const EditForm: React.FC<EditFormProps> = ({
         />
       </div>
       <div>
-        <label className={labelCls}>New Password <span className="text-slate-600 normal-case font-normal">(leave blank to keep)</span></label>
+        <label className={labelCls}>New Password <span className="text-slate-700 normal-case font-normal">(leave blank to keep)</span></label>
         <div className="relative">
           <input
             type={showEditPw ? 'text' : 'password'}
@@ -518,14 +518,14 @@ const EditForm: React.FC<EditFormProps> = ({
     <div className="flex items-center gap-2">
       <button
         type="submit"
-        className="flex items-center gap-1.5 bg-brass hover:bg-brass-light text-white font-semibold text-xs px-3.5 py-2 rounded shadow-sm transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 bg-brass hover:bg-brass-light text-white font-semibold text-xs px-3.5 py-2 rounded shadow-md transition-colors cursor-pointer"
       >
         <Check size={13} /> Save Changes
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className="flex items-center gap-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold px-3.5 py-2 rounded transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold px-3.5 py-2 rounded transition-colors cursor-pointer"
       >
         <X size={13} /> Cancel
       </button>

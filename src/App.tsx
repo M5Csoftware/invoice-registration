@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { AppConfig, TeamMember, Invoice, Flag, BankDetails } from './types';
-import { getStorageItem, setStorageItem } from './services/storage';
+import { api } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar, ALL_NAV_TABS } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -58,8 +58,16 @@ export default function App() {
   const [config, setConfig] = useState<AppConfig>({ threshold: 50000, currency: 'INR' });
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [sessionUser, setSessionUser] = useState<TeamMember | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [sessionUser, setSessionUser] = useState<TeamMember | null>(() => {
+    const saved = localStorage.getItem('invoice_session');
+    return saved ? JSON.parse(saved) : null;
+  });
+  
+  // Initialize activeTab from URL hash if available, otherwise fallback to dashboard
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const hash = window.location.hash.replace('#', '');
+    return hash && hash !== 'login' ? hash : 'dashboard';
+  });
   const [lastActionId, setLastActionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -75,50 +83,51 @@ export default function App() {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const storedConfig = await getStorageItem('config');
+        const storedConfig = await api.getConfig();
         if (storedConfig) {
-          setConfig(JSON.parse(storedConfig));
+          setConfig(storedConfig);
         }
 
-        const storedTeam = await getStorageItem('team');
-        let parsedTeam: TeamMember[] = [];
-        if (storedTeam) {
-          parsedTeam = JSON.parse(storedTeam);
-        }
+        let parsedTeam = await api.getTeam();
 
         // Seed default team if no team or team lacks credentials
         const hasCredentials = parsedTeam.length > 0 && parsedTeam[0].username;
         if (!hasCredentials) {
-          parsedTeam = DEFAULT_TEAM;
+          for (const m of DEFAULT_TEAM) {
+            await api.addTeamMember(m);
+          }
+          parsedTeam = await api.getTeam();
         }
 
         // Always ensure Master Admin account exists and matches .env credentials
         const masterIdx = parsedTeam.findIndex((m) => m.role === 'Master Admin' || m.username === MASTER_ADMIN_USERNAME);
         if (masterIdx === -1) {
-          parsedTeam.unshift({
+          await api.addTeamMember({
             id: 'mem_master',
             name: 'Master Admin',
             username: MASTER_ADMIN_USERNAME,
             password: MASTER_ADMIN_PASSWORD,
             role: 'Master Admin',
           });
+          parsedTeam = await api.getTeam();
         } else {
-          parsedTeam[masterIdx] = {
-            ...parsedTeam[masterIdx],
+          await api.updateTeamMember(parsedTeam[masterIdx].id, {
             username: MASTER_ADMIN_USERNAME,
             password: MASTER_ADMIN_PASSWORD,
             role: 'Master Admin',
-          };
+          });
+          parsedTeam[masterIdx].username = MASTER_ADMIN_USERNAME;
+          parsedTeam[masterIdx].password = MASTER_ADMIN_PASSWORD;
+          parsedTeam[masterIdx].role = 'Master Admin';
         }
-        await setStorageItem('team', JSON.stringify(parsedTeam));
         setTeam(parsedTeam);
 
-        const storedInvoices = await getStorageItem('invoices');
+        const storedInvoices = await api.getInvoices();
         if (storedInvoices) {
-          setInvoices(JSON.parse(storedInvoices));
+          setInvoices(storedInvoices);
         }
       } catch (e) {
-        console.error('Failed to load storage data', e);
+        console.error('Failed to load data from API', e);
       } finally {
         setIsLoading(false);
       }
@@ -126,20 +135,30 @@ export default function App() {
     loadAll();
   }, []);
 
+  // Sync URL hash with activeTab
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && hash !== 'login') {
+        setActiveTab(hash);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (sessionUser) {
+      window.location.hash = activeTab;
+    } else {
+      window.location.hash = 'login';
+    }
+  }, [activeTab, sessionUser]);
+
   // Save methods
   const saveConfig = async (newConfig: AppConfig) => {
     setConfig(newConfig);
-    await setStorageItem('config', JSON.stringify(newConfig));
-  };
-
-  const saveTeam = async (newTeam: TeamMember[]) => {
-    setTeam(newTeam);
-    await setStorageItem('team', JSON.stringify(newTeam));
-  };
-
-  const saveInvoices = async (newInvoices: Invoice[]) => {
-    setInvoices(newInvoices);
-    await setStorageItem('invoices', JSON.stringify(newInvoices));
+    await api.saveConfig(newConfig);
   };
 
   // Fraud-flag logic
@@ -246,7 +265,7 @@ export default function App() {
       history: [],
     };
 
-    const calculatedFlags = computeFlags(partialInv, invoices);
+    const calculatedFlags = computeFlags(partialInv as Omit<Invoice, 'flags'>, invoices);
     const flagsNote = calculatedFlags.length
       ? `Flags at entry: ${calculatedFlags.map((f) => f.text).join('; ')}`
       : '';
@@ -266,8 +285,9 @@ export default function App() {
       ],
     };
 
-    const updatedInvoices = [...invoices, newInvoice];
-    await saveInvoices(updatedInvoices);
+    await api.addInvoice(newInvoice);
+    setInvoices([...invoices, newInvoice]);
+    
     setConfirmInvoice(newInvoice);
     setActiveTab('checkin');
     toast.success(`Invoice ${formData.invoiceNumber} checked in successfully!`, { icon: <span>📄</span> });
@@ -289,19 +309,14 @@ export default function App() {
       note: notes || 'Verified with vendor — no issues found.',
     });
 
-    const updatedInvoices = invoices.map((i) =>
-      i.id === id
-        ? {
-            ...i,
-            status: 'pending_approval' as const,
-            verificationNotes: notes,
-            history: updatedHistory,
-          }
-        : i
-    );
+    const updatedInvoice = await api.updateInvoice(id, {
+      status: 'pending_approval',
+      verificationNotes: notes,
+      history: updatedHistory,
+    });
 
+    setInvoices(invoices.map((i) => (i.id === id ? updatedInvoice : i)));
     setLastActionId(id);
-    await saveInvoices(updatedInvoices);
     toast.success(`Invoice verified successfully`, { icon: <span>✅</span> });
   };
 
@@ -311,7 +326,11 @@ export default function App() {
     const inv = invoices.find((i) => i.id === id);
     if (!inv) return;
     if (inv.enteredBy === sessionUser.id) return; // Prevent self-approval
-    if (sessionUser.role !== 'Admin') return;
+
+    const isMasterAdmin = sessionUser.role === 'Master Admin';
+    const isAdmin = sessionUser.role === 'Admin' || isMasterAdmin;
+    const isVerifier = sessionUser.role === 'Verifier' || isAdmin;
+    if (!isAdmin && !(isVerifier && inv.amount <= 50000)) return;
 
     const updatedApprovals = [...(inv.approvals || [])];
     const updatedHistory = [...(inv.history || [])];
@@ -327,14 +346,14 @@ export default function App() {
       note: '',
     });
 
-    const updatedInvoices = invoices.map((i) =>
-      i.id === id
-        ? { ...i, status: 'approved' as const, approvals: updatedApprovals, history: updatedHistory }
-        : i
-    );
+    const updatedInvoice = await api.updateInvoice(id, {
+      status: 'approved',
+      approvals: updatedApprovals,
+      history: updatedHistory,
+    });
 
+    setInvoices(invoices.map((i) => (i.id === id ? updatedInvoice : i)));
     setLastActionId(id);
-    await saveInvoices(updatedInvoices);
     toast.success(`Invoice approved!`, { icon: <span>👍</span> });
   };
 
@@ -360,12 +379,13 @@ export default function App() {
       note: reason,
     });
 
-    const updatedInvoices = invoices.map((i) =>
-      i.id === rejectInvoiceId ? { ...i, status: 'rejected' as const, history: updatedHistory } : i
-    );
+    const updatedInvoice = await api.updateInvoice(rejectInvoiceId, {
+      status: 'rejected',
+      history: updatedHistory,
+    });
 
+    setInvoices(invoices.map((i) => (i.id === rejectInvoiceId ? updatedInvoice : i)));
     setLastActionId(rejectInvoiceId);
-    await saveInvoices(updatedInvoices);
     toast.error(`Invoice rejected`, { icon: <span>❌</span> });
 
     // Reset reject states
@@ -389,12 +409,13 @@ export default function App() {
       note: '',
     });
 
-    const updatedInvoices = invoices.map((i) =>
-      i.id === id ? { ...i, status: 'paid' as const, history: updatedHistory } : i
-    );
+    const updatedInvoice = await api.updateInvoice(id, {
+      status: 'paid',
+      history: updatedHistory,
+    });
 
+    setInvoices(invoices.map((i) => (i.id === id ? updatedInvoice : i)));
     setLastActionId(id);
-    await saveInvoices(updatedInvoices);
     toast.success(`Invoice marked as paid!`, { icon: <span>💵</span> });
   };
 
@@ -428,39 +449,34 @@ export default function App() {
       note: `${bankData.bankName} (${bankData.ifscCode}) · Account: **** ${bankLast4}`,
     });
 
-    const updatedInvoices = invoices.map((i) =>
-      i.id === invoiceId
-        ? {
-            ...i,
-            bankLast4,
-            bankDetails,
-            history: updatedHistory,
-          }
-        : i
-    );
+    const updatedInvoice = await api.updateInvoice(invoiceId, {
+      bankLast4,
+      bankDetails,
+      history: updatedHistory,
+    });
 
-    await saveInvoices(updatedInvoices);
+    setInvoices(invoices.map((i) => (i.id === invoiceId ? updatedInvoice : i)));
     toast.success(`Bank details saved for ${inv.vendor}`, { icon: <span>🏦</span> });
   };
 
   const handleAddMember = async (name: string, username: string, password: string, role: import('./types').Role) => {
-    const newMember: TeamMember = {
+    const newMember = await api.addTeamMember({
       id: uid('mem'),
       name,
       username,
       password,
       role,
-    };
-    const updatedTeam = [...team, newMember];
-    await saveTeam(updatedTeam);
+    });
+    setTeam([...team, newMember]);
   };
 
   const handleRemoveMember = async (id: string) => {
+    await api.removeTeamMember(id);
     const updatedTeam = team.filter((m) => m.id !== id);
     if (sessionUser?.id === id) {
       setSessionUser(null);
     }
-    await saveTeam(updatedTeam);
+    setTeam(updatedTeam);
   };
 
   const handleEditMember = async (
@@ -470,6 +486,7 @@ export default function App() {
     password: string,
     role: import('./types').Role
   ) => {
+    await api.updateTeamMember(id, { name, username, password, role });
     const updatedTeam = team.map((m) =>
       m.id === id ? { ...m, name, username, password, role } : m
     );
@@ -478,7 +495,7 @@ export default function App() {
       const updated = updatedTeam.find((m) => m.id === id);
       if (updated) setSessionUser(updated);
     }
-    await saveTeam(updatedTeam);
+    setTeam(updatedTeam);
   };
 
   const handleSaveSettings = async (currency: AppConfig['currency'], threshold: number) => {
@@ -488,17 +505,16 @@ export default function App() {
 
   const handleLogin = (member: TeamMember) => {
     setSessionUser(member);
+    localStorage.setItem('invoice_session', JSON.stringify(member));
     toast.success(`Welcome back, ${member.name}!`, { icon: <span>👋</span> });
     // Set default tab based on role
-    if (member.role === 'User') {
-      setActiveTab('checkin');
-    } else {
-      setActiveTab('dashboard');
-    }
+    const defaultTab = member.role === 'User' ? 'checkin' : 'dashboard';
+    setActiveTab(defaultTab);
   };
 
   const handleLogout = () => {
     setSessionUser(null);
+    localStorage.removeItem('invoice_session');
     setActiveTab('dashboard');
     toast.info('Signed out of session');
   };
@@ -506,8 +522,9 @@ export default function App() {
   // Rendering loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center p-6 text-slate font-heading font-semibold text-base">
-        Loading register…
+      <div className="min-h-screen bg-paper flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="w-12 h-12 border-4 border-slate-300 border-t-brass rounded-full animate-spin" />
+        <p className="text-slate-700 font-heading font-semibold text-sm">Loading system data...</p>
       </div>
     );
   }
@@ -540,12 +557,12 @@ export default function App() {
       {/* ── Main content ─────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Page title bar — h-16 matches sidebar logo zone */}
-        <div className="bg-white border-b border-slate-200/80 px-8 h-16 flex items-center shadow-sm md:pl-8 pl-14">
+        <div className="bg-white border-b border-slate-300 px-8 h-16 flex items-center shadow-md md:pl-8 pl-14">
           <div>
             <h1 className="text-xl font-heading font-bold text-ink-dark leading-tight">
               {navTabs.find((t) => t.id === effectiveTab)?.label ?? 'Dashboard'}
             </h1>
-            <p className="text-xs text-slate-600 font-medium tracking-wide mt-0.5">
+            <p className="text-xs text-slate-700 font-medium tracking-wide mt-0.5">
               M5 Invoice Registration · Internal Use Only
             </p>
           </div>
@@ -562,11 +579,11 @@ export default function App() {
           )}
 
           {effectiveTab === 'myinvoices' && (
-            <div className="space-y-4">
+            <div className="w-full space-y-4">
               <h2 className="text-xl font-heading font-bold text-ink-dark">My Invoices</h2>
               <p className="text-xs text-slate">Track the approval status of your submitted invoices.</p>
               {myInvoices.length === 0 ? (
-                <p className="text-slate text-xs italic bg-white border border-slate-200/60 rounded-lg p-6 shadow-sm">
+                <p className="text-slate text-xs italic bg-white border border-slate-300 rounded-lg p-6 shadow-md">
                   You haven't submitted any invoices yet.
                 </p>
               ) : (
@@ -604,7 +621,7 @@ export default function App() {
             />
           )}
 
-          {effectiveTab === 'audit' && <AuditView invoices={invoices} />}
+          {effectiveTab === 'audit' && <AuditView invoices={invoices} config={config} />}
 
           {effectiveTab === 'team' && (
             <TeamSettingsView
@@ -704,7 +721,7 @@ export default function App() {
               }}
               rows={3}
               placeholder="Reason for rejection..."
-              className="w-full bg-white border border-slate-200 rounded p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass text-ink-dark resize-y shadow-sm"
+              className="w-full bg-white border border-slate-300 rounded p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass text-ink-dark resize-y shadow-md"
             />
             {rejectError && <div className="text-red text-xs mt-1 font-medium">{rejectError}</div>}
           </div>
@@ -715,7 +732,7 @@ export default function App() {
                 setRejectReason('');
                 setRejectError('');
               }}
-              className="border border-slate-200 text-slate hover:bg-slate-50 text-xs font-semibold px-4 py-2 rounded transition-colors cursor-pointer"
+              className="border border-slate-300 text-slate hover:bg-slate-50 text-xs font-semibold px-4 py-2 rounded transition-colors cursor-pointer"
             >
               Cancel
             </button>

@@ -70,7 +70,7 @@ export const KPIs: React.FC<KPIsProps> = ({
         return (
           <div
             key={index}
-            className={`bg-card border border-slate-200/60 border-l-4 ${card.colorClass} rounded-lg p-4 flex flex-col justify-between shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${
+            className={`bg-card border border-slate-300 border-l-4 ${card.colorClass} rounded-lg p-4 flex flex-col justify-between shadow-md hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${
               card.highlight ? 'bg-red-50/20' : ''
             }`}
           >
