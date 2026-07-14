@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Invoice, TeamMember, AppConfig } from '../types';
-import { Search, Eye, Landmark } from 'lucide-react';
+import { Search, Eye, Landmark, Image as ImageIcon, X, Download, SearchX } from 'lucide-react';
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -45,6 +45,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   const [verifyNotes, setVerifyNotes] = useState<Record<string, string>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'paid' | 'rejected'>('all');
+  const [fullScreenImage, setFullScreenImage] = useState<Invoice | null>(null);
 
   const getMemberName = (id: string) => {
     const member = team.find((t) => t.id === id);
@@ -124,7 +125,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
 
   const renderActionButtons = (inv: Invoice) => {
     if (!currentUser) {
-      return <span className="text-xs text-slate-600 italic">Not logged in</span>;
+      return <span className="text-xs text-slate-700 italic">Not logged in</span>;
     }
 
     const isOwnEntry = inv.enteredBy === currentUser.id;
@@ -142,7 +143,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 setVerifyNotes({ ...verifyNotes, [inv.id]: e.target.value })
               }
               placeholder="Add verification notes..."
-              className="w-full border border-slate-200 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none text-ink-dark"
+              className="w-full border border-slate-300 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none text-ink-dark"
               rows={2}
             />
             <div className="flex gap-1.5">
@@ -162,12 +163,14 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
           </div>
         );
       }
-      return <span className="text-xs text-slate-600 font-medium">Awaiting verifier</span>;
+      return <span className="text-xs text-slate-700 font-medium">Awaiting verifier</span>;
     }
 
     // Step 2: Admin approves after verification
     if (inv.status === 'pending_approval') {
-      if (isAdmin) {
+      const canApprove = isAdmin || (isVerifier && inv.amount <= 50000);
+      
+      if (canApprove) {
         if (isOwnEntry) {
           return (
             <span className="text-xs text-red font-semibold leading-tight block max-w-[140px]">
@@ -192,7 +195,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
           </div>
         );
       }
-      return <span className="text-xs text-slate-600 font-medium">Awaiting admin</span>;
+      return <span className="text-xs text-slate-700 font-medium">Awaiting admin</span>;
     }
 
     // Step 3: Admin adds bank details & pays after approval
@@ -210,11 +213,10 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             {onAddBankDetails && (
               <button
                 onClick={() => onAddBankDetails(inv)}
-                className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer ${
-                  inv.bankDetails
-                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
-                }`}
+                className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer ${inv.bankDetails
+                  ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md'
+                  }`}
               >
                 <Landmark size={13} />
                 {inv.bankDetails ? 'Edit Bank Details' : '+ Add Bank Details'}
@@ -234,7 +236,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
       );
     }
 
-    return <span className="text-slate-500">—</span>;
+    return <span className="text-slate-600">—</span>;
   };
 
   const filterTabs = [
@@ -259,26 +261,24 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             placeholder="Search vendor or invoice..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border border-slate-200/80 rounded px-8 py-1.5 text-xs text-ink-dark focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all shadow-sm"
+            className="w-full bg-white border border-slate-300 rounded px-8 py-1.5 text-xs text-ink-dark focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all shadow-md"
           />
         </div>
 
         {/* Filters Grid */}
-        <div className="flex flex-wrap bg-slate-100 p-0.5 rounded-lg border border-slate-200/40 w-full md:w-auto overflow-x-auto select-none no-scrollbar">
+        <div className="flex flex-wrap bg-slate-100 p-0.5 rounded-lg border border-slate-300 w-full md:w-auto overflow-x-auto select-none no-scrollbar">
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all ${
-                statusFilter === tab.id
-                  ? 'bg-white text-ink-dark shadow-sm'
-                  : 'text-slate hover:text-ink-dark'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all ${statusFilter === tab.id
+                ? 'bg-white text-ink-dark shadow-md'
+                : 'text-slate hover:text-ink-dark'
+                }`}
             >
               {tab.label}
-              <span className={`text-xs px-2 py-0.5 rounded-full font-mono font-bold ${
-                statusFilter === tab.id ? 'bg-indigo-50 text-brass' : 'bg-slate-200 text-slate-700'
-              }`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-mono font-bold ${statusFilter === tab.id ? 'bg-indigo-50 text-brass' : 'bg-slate-200 text-slate-700'
+                }`}>
                 {tab.count}
               </span>
             </button>
@@ -287,9 +287,13 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
       </div>
 
       {filteredInvoices.length === 0 ? (
-        <p className="text-slate text-xs italic bg-white border border-slate-200/40 rounded p-6 shadow-sm text-center">
-          No records match your query parameters.
-        </p>
+        <div className="flex flex-col items-center justify-center bg-white border border-slate-300 rounded-lg p-10 shadow-md">
+          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+            <SearchX size={32} className="text-slate-400" />
+          </div>
+          <p className="text-ink-dark font-bold text-sm">No records found</p>
+          <p className="text-slate-600 text-xs mt-1 text-center">Try adjusting your search query or filters.</p>
+        </div>
       ) : (
         <>
           {/* Mobile Card Layout */}
@@ -301,9 +305,8 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 <div
                   key={inv.id}
                   onClick={() => onInvoiceClick(inv)}
-                  className={`bg-white border border-slate-200/80 rounded-lg p-4 shadow-sm relative space-y-3 cursor-pointer hover:border-brass/30 transition-all ${
-                    isNewAction ? 'ring-1 ring-brass' : ''
-                  }`}
+                  className={`bg-white border border-slate-300 rounded-lg p-4 shadow-md relative space-y-3 cursor-pointer hover:border-brass/30 transition-all ${isNewAction ? 'ring-1 ring-brass' : ''
+                    }`}
                   title="Click to view full records"
                 >
                   <div className="flex justify-between items-start">
@@ -322,68 +325,50 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                       <div className="font-mono font-bold text-ink-dark text-sm">
                         {formatAmount(inv.amount, config.currency)}
                       </div>
-                      <div className="text-xs text-slate-600 font-mono mt-0.5">
+                      <div className="text-xs text-slate-700 font-mono mt-0.5">
                         {inv.invoiceDate}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                    <div className="text-xs text-slate-600">
+                    <div className="text-xs text-slate-700">
                       Actor: <span className="font-semibold text-ink-dark">{getMemberName(inv.enteredBy)}</span>
                     </div>
-                    <div className="flex flex-col items-end">
+                    <div className="flex flex-col items-end gap-2">
                       {(inv.status === 'pending_verification' || inv.status === 'pending_approval') ? (
-                        <span className="font-semibold text-brass text-xs bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded">
+                        <span className="font-bold text-white text-xs bg-indigo-600 px-2.5 py-1 rounded shadow-sm">
                           {getStatusLabel(inv.status)}
                         </span>
                       ) : (
                         <div className="flex flex-wrap gap-1 items-center">
                           {(inv.status === 'approved' || inv.status === 'paid') && (
-                            <span className="text-green text-xs font-bold bg-green/5 border border-green/10 px-2 py-0.5 rounded">
+                            <span className="text-white text-xs font-bold bg-green px-2.5 py-1 rounded shadow-sm">
                               Approved
                             </span>
                           )}
                           {inv.status === 'rejected' && (
-                            <span className="text-red text-xs font-bold bg-red/5 border border-red/10 px-2 py-0.5 rounded">
+                            <span className="text-white text-xs font-bold bg-red px-2.5 py-1 rounded shadow-sm">
                               Rejected
                             </span>
                           )}
                           {inv.status === 'paid' && (
-                            <span className="text-brass text-xs font-bold bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded ml-1">
+                            <span className="text-white text-xs font-bold bg-indigo-600 px-2.5 py-1 rounded shadow-sm ml-1">
                               Paid
                             </span>
                           )}
                         </div>
                       )}
-                      {renderInlineProgress(inv)}
+                      {inv.invoiceImage && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setFullScreenImage(inv); }}
+                          className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase transition-colors"
+                        >
+                          <ImageIcon size={12} className="text-brass" /> View Scan
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  {inv.flags && inv.flags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-100/50">
-                      {inv.flags.map((flag, idx) => {
-                        let colorClass = '';
-                        if (flag.level === 'high') {
-                          colorClass = 'bg-red/5 text-red border border-red/10';
-                        } else if (flag.level === 'medium') {
-                          colorClass = 'bg-brass/5 text-brass border border-brass/10';
-                        } else {
-                          colorClass = 'bg-slate-100 text-slate-700 border border-slate-300';
-                        }
-
-                        return (
-                          <span
-                            key={idx}
-                            title={flag.text}
-                            className={`inline-block text-xs font-semibold px-2 py-0.5 rounded select-none ${colorClass}`}
-                          >
-                            {flag.text.length > 25 ? flag.text.substring(0, 25) + '…' : flag.text}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
 
                   {showActions && (
                     <div className="pt-2 border-t border-slate-100 flex justify-end" onClick={(e) => e.stopPropagation()}>
@@ -396,17 +381,17 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block overflow-x-auto w-full border border-slate-200/60 rounded-lg bg-white shadow-sm">
+          <div className="hidden md:block overflow-x-auto w-full border border-slate-300 rounded-lg bg-white shadow-md">
             <table className="w-full border-collapse text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/70 select-none">
+                <tr className="border-b border-slate-300 bg-slate-50/70 select-none">
                   <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[130px]">Vendor</th>
                   <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[90px]">Invoice #</th>
                   <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[90px]">Date</th>
                   <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[100px]">Amount</th>
                   <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[110px]">Entered By</th>
                   <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[130px]">Workflow Status</th>
-                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[150px]">Flags</th>
+                  <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[100px]">Scan</th>
                   {showActions && (
                     <th className="font-sans text-xs uppercase font-bold tracking-wider text-slate-700 px-4 py-3 min-w-[140px]">Action</th>
                   )}
@@ -420,18 +405,17 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     <tr
                       key={inv.id}
                       onClick={() => onInvoiceClick(inv)}
-                      className={`hover:bg-slate-50/50 cursor-pointer transition-colors group ${
-                        isNewAction ? 'bg-indigo-50/15' : ''
-                      }`}
+                      className={`hover:bg-slate-50/50 cursor-pointer transition-colors group ${isNewAction ? 'bg-indigo-50/15' : ''
+                        }`}
                       title="Click to view full records"
                     >
                       <td className="px-4 py-3.5 align-top">
                         <div className="font-bold text-ink-dark flex items-center gap-1.5">
                           {inv.vendor}
-                          <Eye size={12} className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-brass transition-all" />
+                          <Eye size={12} className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-brass transition-all" />
                         </div>
                         {inv.poNumber && (
-                          <div className="text-xs text-slate-600 font-mono mt-0.5">
+                          <div className="text-xs text-slate-700 font-mono mt-0.5">
                             PO {inv.poNumber}
                           </div>
                         )}
@@ -447,67 +431,45 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                       </td>
                       <td className="px-4 py-3.5 align-top text-slate-700">
                         <div className="font-semibold text-ink-dark">{getMemberName(inv.enteredBy)}</div>
-                        <div className="text-xs text-slate-600 font-mono">{getMemberRole(inv.enteredBy)}</div>
+                        <div className="text-xs text-slate-700 font-mono">{getMemberRole(inv.enteredBy)}</div>
                       </td>
                       <td className="px-4 py-3.5 align-top relative">
-                        <div className="flex flex-col gap-0.5 items-start">
+                        <div className="flex flex-col gap-1 items-start">
                           {(inv.status === 'pending_verification' || inv.status === 'pending_approval') ? (
-                            <span className="font-semibold text-brass text-[11px] bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded">
+                            <span className="font-bold text-white text-[11px] bg-indigo-600 px-2.5 py-1 rounded shadow-sm">
                               {getStatusLabel(inv.status)}
                             </span>
                           ) : (
-                            <div className="flex flex-wrap gap-1 items-center select-none font-mono">
+                            <div className="flex flex-wrap gap-1.5 items-center select-none font-mono">
                               {(inv.status === 'approved' || inv.status === 'paid') && (
-                                <span className="text-green text-[10px] font-bold bg-green/5 border border-green/10 px-2 py-0.5 rounded">
+                                <span className="text-white text-[11px] font-bold bg-green px-2.5 py-1 rounded shadow-sm">
                                   APPROVED
                                 </span>
                               )}
                               {inv.status === 'rejected' && (
-                                <span className="text-red text-[10px] font-bold bg-red/5 border border-red/10 px-2 py-0.5 rounded">
+                                <span className="text-white text-[11px] font-bold bg-red px-2.5 py-1 rounded shadow-sm">
                                   REJECTED
                                 </span>
                               )}
                               {inv.status === 'paid' && (
-                                <span className="text-brass text-[10px] font-bold bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded ml-1">
+                                <span className="text-white text-[11px] font-bold bg-indigo-600 px-2.5 py-1 rounded shadow-sm">
                                   PAID
                                 </span>
                               )}
                             </div>
                           )}
-                          {renderInlineProgress(inv)}
                         </div>
                       </td>
                       <td className="px-4 py-3.5 align-top">
-                        {inv.flags && inv.flags.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[200px]">
-                            {inv.flags.map((flag, idx) => {
-                              const trimmedLabel =
-                                flag.text.length > 25
-                                  ? flag.text.substring(0, 25) + '…'
-                                  : flag.text;
-
-                              let colorClass = '';
-                              if (flag.level === 'high') {
-                                colorClass = 'bg-red/5 text-red border border-red/10';
-                              } else if (flag.level === 'medium') {
-                                colorClass = 'bg-brass/5 text-brass border border-brass/10';
-                              } else {
-                                colorClass = 'bg-slate-100 text-slate-700 border border-slate-300';
-                              }
-
-                              return (
-                                <span
-                                  key={idx}
-                                  title={flag.text}
-                                  className={`inline-block text-xs font-semibold px-2 py-0.5 rounded select-none cursor-help transition-all ${colorClass}`}
-                                >
-                                  {trimmedLabel}
-                                </span>
-                              );
-                            })}
-                          </div>
+                        {inv.invoiceImage ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setFullScreenImage(inv); }}
+                            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-bold uppercase transition-colors"
+                          >
+                            <ImageIcon size={14} className="text-brass" /> View Image
+                          </button>
                         ) : (
-                          <span className="text-slate-500 font-medium text-xs">—</span>
+                          <span className="text-slate-500 font-medium text-xs italic">No image</span>
                         )}
                       </td>
                       {showActions && (
@@ -522,6 +484,34 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
             </table>
           </div>
         </>
+      )}
+
+      {/* Full Screen Image Overlay */}
+      {fullScreenImage && fullScreenImage.invoiceImage && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/95 flex items-center justify-center p-4 sm:p-8 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+          <img
+            src={fullScreenImage.invoiceImage}
+            alt="Full Size Invoice Document"
+            className="max-w-full max-h-full object-contain rounded shadow-2xl border border-slate-700"
+          />
+          <div className="absolute top-6 right-6 flex gap-3">
+            <a
+              href={fullScreenImage.invoiceImage}
+              download={`Invoice_${fullScreenImage.invoiceNumber}.png`}
+              className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-md transition-all shadow-lg"
+              title="Download"
+            >
+              <Download size={22} />
+            </a>
+            <button
+              onClick={() => setFullScreenImage(null)}
+              className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-md transition-all shadow-lg cursor-pointer"
+              title="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
