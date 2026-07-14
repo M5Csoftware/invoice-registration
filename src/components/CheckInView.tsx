@@ -100,9 +100,10 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
   };
 
   const disabled = !currentUser;
+  const isFormValid = vendor.trim() !== '' && invoiceNumber.trim() !== '' && invoiceDate !== '' && parsedTaxable > 0;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <h2 className="text-xl font-heading font-bold text-ink-dark flex items-center gap-2">
         <FilePlus size={18} className="text-brass" />
         Check In an Invoice
@@ -117,11 +118,11 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleFormSubmit} className="w-full bg-white border border-slate-200/60 rounded-lg p-6 sm:p-8 shadow-sm space-y-6">
+      <form onSubmit={handleFormSubmit} className="w-full bg-white border border-slate-300 rounded-lg p-6 sm:p-8 shadow-md space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-              Vendor Name *
+              Vendor Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -130,12 +131,12 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               value={vendor}
               onChange={(e) => setVendor(e.target.value)}
               placeholder="e.g. Acme Corp"
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-sm"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-md"
             />
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-              Invoice Number *
+              Invoice Number <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -144,12 +145,12 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               value={invoiceNumber}
               onChange={(e) => setInvoiceNumber(e.target.value)}
               placeholder="e.g. INV-2024-001"
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-sm"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-md"
             />
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-              Invoice Date *
+              Invoice Date <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
@@ -157,12 +158,12 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               disabled={disabled}
               value={invoiceDate}
               onChange={(e) => setInvoiceDate(e.target.value)}
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark shadow-sm cursor-pointer"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark shadow-md cursor-pointer"
             />
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-              Taxable Amount ({config.currency}) *
+              Taxable Amount ({config.currency}) <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -173,18 +174,18 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               value={taxableAmount}
               onChange={(e) => setTaxableAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-sm"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-md"
             />
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 block">
-              Tax Option *
+              Tax Option <span className="text-red-500">*</span>
             </label>
             <select
               disabled={disabled}
               value={taxOption}
               onChange={(e) => setTaxOption(e.target.value as TaxOption)}
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark shadow-sm cursor-pointer"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark shadow-md cursor-pointer"
             >
               <option value="IGST">IGST (18%)</option>
               <option value="CGST_SGST">CGST + SGST (9% + 9%)</option>
@@ -198,10 +199,10 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               type="text"
               readOnly
               value={formatAmount(calculatedTotal, config.currency)}
-              className="w-full bg-slate-100/90 text-ink-dark font-mono font-bold border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm shadow-sm cursor-not-allowed select-none"
+              className="w-full bg-slate-100/90 text-ink-dark font-mono font-bold border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm shadow-md cursor-not-allowed select-none"
             />
             {parsedTaxable > 0 && (
-              <p className="text-xs text-slate-600 mt-1 font-mono">
+              <p className="text-xs text-slate-700 mt-1 font-mono">
                 {taxOption === 'IGST' ? (
                   <span>Tax (18% IGST): +{formatAmount(calculatedTax, config.currency)}</span>
                 ) : (
@@ -220,7 +221,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               value={poNumber}
               onChange={(e) => setPoNumber(e.target.value)}
               placeholder="e.g. PO-99882"
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-sm"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-md"
             />
           </div>
           <div>
@@ -235,7 +236,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
               maxLength={4}
               pattern="[0-9]{4}"
               placeholder="e.g. 1234"
-              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-sm"
+              className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 shadow-md"
             />
           </div>
         </div>
@@ -250,7 +251,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Describe the transaction parameters..."
-            className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-200/80 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 resize-y shadow-sm"
+            className="w-full bg-white disabled:bg-slate-50 disabled:text-slate-400 border border-slate-300 rounded px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-brass focus:border-brass transition-all text-ink-dark placeholder-slate-400 resize-y shadow-md"
           />
         </div>
 
@@ -260,7 +261,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
             Invoice Image / Scan
           </label>
           {invoiceImage ? (
-            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm bg-white">
+            <div className="border border-slate-300 rounded-lg overflow-hidden shadow-md bg-white">
               <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-ink-dark">
                   <Image size={13} className="text-brass" />
@@ -294,8 +295,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
                 dragOver
                   ? 'border-brass bg-brass/5'
                   : disabled
-                  ? 'border-slate-200 bg-slate-50 cursor-not-allowed'
-                  : 'border-slate-200 hover:border-brass hover:bg-brass/5 bg-white'
+                  ? 'border-slate-300 bg-slate-50 cursor-not-allowed'
+                  : 'border-slate-300 hover:border-brass hover:bg-brass/5 bg-white'
               }`}
             >
               <Upload size={22} className={dragOver ? 'text-brass' : 'text-slate-300'} />
@@ -306,7 +307,7 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
                   ? 'Drop to upload'
                   : 'Click or drag & drop an invoice image'}
               </span>
-              <span className="text-xs text-slate-600 font-medium">PNG, JPG, PDF preview supported</span>
+              <span className="text-xs text-slate-700 font-medium">PNG, JPG, PDF preview supported</span>
             </div>
           )}
           <input
@@ -321,8 +322,8 @@ export const CheckInView: React.FC<CheckInViewProps> = ({
 
         <button
           type="submit"
-          disabled={disabled}
-          className="bg-brass hover:bg-brass-light disabled:opacity-40 text-white font-semibold text-xs px-5 py-2.5 rounded-md shadow-sm transition-all cursor-pointer disabled:cursor-not-allowed"
+          disabled={disabled || !isFormValid}
+          className="bg-brass hover:bg-brass-light disabled:opacity-40 text-white font-semibold text-xs px-5 py-2.5 rounded-md shadow-md transition-all cursor-pointer disabled:cursor-not-allowed"
         >
           Check In Invoice
         </button>

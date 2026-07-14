@@ -18,9 +18,9 @@ const roleIcon: Record<string, React.ReactNode> = {
 
 export const Header: React.FC<HeaderProps> = ({ sessionUser, onLogout }) => {
   return (
-    <header className="bg-ink border-b border-slate-800 px-6 sm:px-8 py-3.5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 shadow-sm text-white">
+    <header className="bg-ink border-b border-slate-800 px-6 sm:px-8 py-3.5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 shadow-md text-white">
       <div className="flex items-center gap-3">
-        <div className="bg-brass p-2 rounded-lg text-white shadow-sm flex items-center justify-center">
+        <div className="bg-brass p-2 rounded-lg text-white shadow-md flex items-center justify-center">
           <Receipt size={20} />
         </div>
         <div className="flex flex-col">

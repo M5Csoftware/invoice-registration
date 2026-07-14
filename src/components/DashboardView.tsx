@@ -2,8 +2,9 @@ import React from 'react';
 import type { Invoice, AppConfig, TeamMember } from '../types';
 import { KPIs } from './KPIs';
 import { InvoiceTable } from './InvoiceTable';
-import { Shield } from 'lucide-react';
+import { Shield, Download } from 'lucide-react';
 import { formatAmount } from './InvoiceTable';
+import { exportInvoicesToCSV } from '../utils/export';
 
 interface DashboardViewProps {
   invoices: Invoice[];
@@ -34,7 +35,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const flaggedCount = flaggedList.length;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-6">
       <KPIs
         pendingL1={pendingVerification}
         pendingL2={pendingApproval}
@@ -44,11 +45,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       />
 
       <div className="bg-paper rounded-lg">
-        <h2 className="text-xl font-heading font-bold text-ink-dark flex items-center gap-2 mb-3">
-          Needs Attention
-        </h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+          <h2 className="text-xl font-heading font-bold text-ink-dark flex items-center gap-2">
+            Needs Attention
+          </h2>
+          {flaggedList.length > 0 && (
+            <button
+              onClick={() => exportInvoicesToCSV(flaggedList, 'Flagged_Invoices')}
+              className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-sm"
+            >
+              <Download size={14} /> Export Flagged to CSV
+            </button>
+          )}
+        </div>
         {flaggedList.length === 0 ? (
-          <p className="text-slate text-xs italic bg-white border border-slate-200/60 rounded-lg p-6 shadow-sm">
+          <p className="text-slate text-xs italic bg-white border border-slate-300 rounded-lg p-6 shadow-md">
             Nothing flagged right now — the register is clean.
           </p>
         ) : (
@@ -69,7 +80,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Audit policy note */}
-      <div className="border border-slate-200 border-l-4 border-l-slate-400 bg-white p-5 rounded-lg shadow-sm">
+      <div className="border border-slate-300 border-l-4 border-l-slate-400 bg-white p-5 rounded-lg shadow-md">
         <h3 className="font-heading font-semibold text-sm text-ink-dark uppercase tracking-wider flex items-center gap-2">
           <Shield size={16} className="text-slate-400" />
           Audit Policy

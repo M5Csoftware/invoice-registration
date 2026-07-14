@@ -8,8 +8,8 @@ export default {
     extend: {
       colors: {
         paper: {
-          DEFAULT: '#F8FAFC',
-          line: 'rgba(148,163,184,0.08)',
+          DEFAULT: '#f1f5f9',
+          line: 'rgba(148,163,184,0.12)',
         },
         ink: {
           DEFAULT: '#0F172A',
@@ -26,7 +26,16 @@ export default {
           DEFAULT: '#16A34A',
         },
         slate: {
-          DEFAULT: '#334155',
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
         },
         card: {
           DEFAULT: '#FFFFFF',
