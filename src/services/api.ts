@@ -1,4 +1,4 @@
-import type { AppConfig, TeamMember, Invoice, Role } from '../types';
+import type { AppConfig, TeamMember, Invoice } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/invoice-registration';
 
