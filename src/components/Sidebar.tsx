@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { TeamMember, Role } from '../types';
+import type { TeamMember } from '../types';
 import {
   Receipt, LogOut, ShieldCheck, User, Eye,
   LayoutDashboard, FilePlus, ClipboardCheck, History, Users, Menu, X,
