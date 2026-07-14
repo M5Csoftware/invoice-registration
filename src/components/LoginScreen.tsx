@@ -85,7 +85,7 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
           <span className="text-base font-heading font-bold text-ink-dark">M5 Invoice Registration</span>
         </div>
 
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-md">
           <h2 className="text-2xl font-heading font-bold text-ink-dark mb-1">Sign in</h2>
           <p className="text-sm text-slate mb-8">Enter your credentials to access the system.</p>
 
@@ -101,7 +101,7 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); setError(''); }}
                 placeholder="e.g. admin"
-                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white text-ink-dark placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brass/50 focus:border-brass shadow-sm transition"
+                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm bg-white text-ink-dark placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brass/50 focus:border-brass shadow-md transition"
               />
             </div>
 
@@ -117,7 +117,7 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="••••••••"
-                  className="w-full border border-slate-200 rounded-lg px-4 py-2.5 pr-11 text-sm bg-white text-ink-dark placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brass/50 focus:border-brass shadow-sm transition"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 pr-11 text-sm bg-white text-ink-dark placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brass/50 focus:border-brass shadow-md transition"
                 />
                 <button
                   type="button"
@@ -172,7 +172,7 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
                   className="w-full flex justify-between items-center text-xs px-3 py-1.5 rounded hover:bg-brass/10 text-ink-dark transition cursor-pointer"
                 >
                   <span className="font-semibold truncate max-w-[110px]">{m.name}</span>
-                  <span className="font-mono text-slate-600 text-xs ml-2 font-medium">
+                  <span className="font-mono text-slate-700 text-xs ml-2 font-medium">
                     {m.username} · {m.role}
                   </span>
                 </button>
