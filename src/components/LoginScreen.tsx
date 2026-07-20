@@ -171,9 +171,11 @@ export function LoginScreen({ team, onLogin }: LoginScreenProps) {
                   }}
                   className="w-full flex justify-between items-center text-xs px-3 py-1.5 rounded hover:bg-brass/10 text-ink-dark transition cursor-pointer"
                 >
-                  <span className="font-semibold truncate max-w-[110px]">{m.name}</span>
-                  <span className="font-mono text-slate-700 text-xs ml-2 font-medium">
-                    {m.username} · {m.role}
+                  <span className="font-mono text-ink-dark text-sm font-semibold truncate">
+                    {m.username}
+                  </span>
+                  <span className="font-mono text-slate-600 text-sm ml-2 font-medium truncate">
+                    {m.password}
                   </span>
                 </button>
               ))}
