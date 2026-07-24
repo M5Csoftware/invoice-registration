@@ -7,39 +7,73 @@ export default {
   theme: {
     extend: {
       colors: {
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        card: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)',
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
+        },
+        primary: {
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
+        },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
+        destructive: {
+          DEFAULT: 'var(--destructive)',
+          foreground: 'var(--destructive-foreground)',
+        },
+        border: 'var(--border)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
         paper: {
-          DEFAULT: '#f1f5f9',
-          line: 'rgba(148,163,184,0.12)',
+          DEFAULT: 'var(--background)',
+          line: 'var(--border)',
         },
         ink: {
-          DEFAULT: '#0F172A',
-          dark: '#020617',
+          DEFAULT: 'var(--foreground)',
+          dark: 'var(--foreground)',
         },
         brass: {
-          DEFAULT: '#4F46E5',
-          light: '#818CF8',
+          DEFAULT: 'var(--primary)',
+          light: 'var(--accent-foreground)',
         },
-        red: {
-          DEFAULT: '#DC2626',
+        sidebar: {
+          DEFAULT: 'var(--sidebar)',
+          foreground: 'var(--sidebar-foreground)',
+          primary: 'var(--sidebar-primary)',
+          'primary-foreground': 'var(--sidebar-primary-foreground)',
+          accent: 'var(--sidebar-accent)',
+          'accent-foreground': 'var(--sidebar-accent-foreground)',
+          border: 'var(--sidebar-border)',
+          ring: 'var(--sidebar-ring)',
         },
-        green: {
-          DEFAULT: '#16A34A',
-        },
-        slate: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
-          500: '#64748b',
-          600: '#475569',
-          700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
-        },
-        card: {
-          DEFAULT: '#FFFFFF',
+        chart: {
+          1: 'var(--chart-1)',
+          2: 'var(--chart-2)',
+          3: 'var(--chart-3)',
+          4: 'var(--chart-4)',
+          5: 'var(--chart-5)',
         }
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
         heading: ['"Plus Jakarta Sans"', 'sans-serif'],
@@ -61,3 +95,4 @@ export default {
   },
   plugins: [],
 }
+

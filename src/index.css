@@ -4,25 +4,66 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: oklch(0.99 0.005 28);
+  --foreground: oklch(0.20 0.04 28);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.04 28);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.04 28);
+  --primary: oklch(0.50 0.22 28);
+  --primary-foreground: oklch(0.99 0.005 28);
+  --secondary: oklch(0.96 0.01 28);
+  --secondary-foreground: oklch(0.50 0.22 28);
+  --muted: oklch(0.96 0.01 28);
+  --muted-foreground: oklch(0.55 0.04 28);
+  --accent: oklch(0.94 0.02 28);
+  --accent-foreground: oklch(0.50 0.22 28);
+  --destructive: oklch(0.60 0.20 20);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.90 0.02 28);
+  --input: oklch(0.90 0.02 28);
+  --ring: oklch(0.50 0.22 28);
+  --radius: 0.75rem;
+  --chart-1: oklch(0.50 0.22 28);
+  --chart-2: oklch(0.58 0.18 28);
+  --chart-3: oklch(0.66 0.14 28);
+  --chart-4: oklch(0.74 0.10 28);
+  --chart-5: oklch(0.82 0.06 28);
+  --sidebar: oklch(0.99 0.005 28);
+  --sidebar-foreground: oklch(0.20 0.04 28);
+  --sidebar-primary: oklch(0.50 0.22 28);
+  --sidebar-primary-foreground: oklch(0.99 0.005 28);
+  --sidebar-accent: oklch(0.94 0.02 28);
+  --sidebar-accent-foreground: oklch(0.50 0.22 28);
+  --sidebar-border: oklch(0.90 0.02 28);
+  --sidebar-ring: oklch(0.50 0.22 28);
+}
+
 @layer base {
   html, body {
-    /* Use plain CSS — @apply with custom extended font keys fails in @layer base */
     font-family: "DM Sans", "Plus Jakarta Sans", sans-serif;
-    @apply bg-paper text-ink-dark antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
   }
 
   ::selection {
-    background-color: #C7D2FE;
-    color: #0F172A;
+    background-color: oklch(0.94 0.02 28);
+    color: oklch(0.50 0.22 28);
   }
 
   button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
-    @apply outline-none ring-2 ring-brass ring-offset-2 ring-offset-paper;
+    @apply outline-none ring-2 ring-ring ring-offset-2;
   }
 }
 
-/* Custom scrollbar */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* Hide scrollbar while preserving scroll */
+.hide-scrollbar, .no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.hide-scrollbar::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar { display: none; }
+

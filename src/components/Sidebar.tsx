@@ -14,17 +14,17 @@ interface SidebarProps {
 }
 
 const roleIcon: Record<string, React.ReactNode> = {
-  'Master Admin': <ShieldCheck size={14} className="text-amber-400" />,
-  Admin: <ShieldCheck size={14} className="text-brass" />,
-  Verifier: <Eye size={14} className="text-blue-400" />,
-  User: <User size={14} className="text-slate-300" />,
+  'Master Admin': <ShieldCheck size={14} className="text-primary" />,
+  Admin: <ShieldCheck size={14} className="text-primary" />,
+  Verifier: <Eye size={14} className="text-blue-500" />,
+  User: <User size={14} className="text-muted-foreground" />,
 };
 
 const roleBadge: Record<string, string> = {
-  'Master Admin': 'bg-amber-500/20 text-amber-300 border-amber-400/30',
-  Admin: 'bg-brass/20 text-brass border-brass/30',
-  Verifier: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
-  User: 'bg-slate-700 text-slate-300 border-slate-600',
+  'Master Admin': 'bg-primary/15 text-primary border-primary/30',
+  Admin: 'bg-primary/10 text-primary border-primary/20',
+  Verifier: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  User: 'bg-accent text-muted-foreground border-border',
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -40,21 +40,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const NavContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo — fixed height matches the main top bar */}
-      <div className="px-5 h-16 flex items-center border-b border-slate-700/60 shrink-0">
+      <div className="px-5 h-16 flex items-center border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-brass rounded-lg flex items-center justify-center shadow-md shrink-0">
-            <Receipt size={18} className="text-ink-dark" />
+          <div className="w-9 h-9 bg-primary text-primary-foreground rounded-lg flex items-center justify-center shadow-sm shrink-0">
+            <Receipt size={18} />
           </div>
           <div>
-            <p className="text-white font-heading font-bold text-base leading-tight">M5 Invoice</p>
-            <p className="text-brass-light text-xs font-medium tracking-wide">Registration System</p>
+            <p className="text-foreground font-heading font-bold text-base leading-tight">M5 Invoice</p>
+            <p className="text-muted-foreground text-xs font-medium tracking-wide">Registration System</p>
           </div>
         </div>
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="text-xs uppercase tracking-wider text-slate-400 font-bold px-2 mb-2">Navigation</p>
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto hide-scrollbar">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold px-2 mb-2">Navigation</p>
         {navTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -64,17 +64,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => { onTabChange(tab.id); setMobileOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer group ${
                 isActive
-                  ? 'bg-brass text-ink-dark shadow-md shadow-brass/20'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               }`}
             >
               <Icon
                 size={16}
-                className={isActive ? 'text-ink-dark' : 'text-slate-400 group-hover:text-slate-200 transition-colors'}
+                className={isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-accent-foreground transition-colors'}
               />
               <span>{tab.label}</span>
               {isActive && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-ink-dark opacity-60" />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
               )}
             </button>
           );
@@ -82,14 +82,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
         {/* User Profile + Logout */}
-        <div className="px-3 pb-4 pt-3 border-t border-slate-700/60 space-y-2">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-slate-800/60">
-            <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center border border-slate-600 shrink-0">
+        <div className="px-3 pb-4 pt-3 border-t border-border space-y-2">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-accent/40 border border-border/50">
+            <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center border border-border shrink-0 text-foreground">
               {roleIcon[sessionUser.role] || <User size={14} />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-200 truncate">{sessionUser.name}</p>
-              <p className="text-xs font-mono text-slate-300 truncate">@{sessionUser.username}</p>
+              <p className="text-xs font-semibold text-foreground truncate">{sessionUser.name}</p>
+              <p className="text-xs font-mono text-muted-foreground truncate">@{sessionUser.username}</p>
             </div>
             <span className={`text-xs font-bold px-2 py-0.5 rounded border ${roleBadge[sessionUser.role]}`}>
               {sessionUser.role}
@@ -98,20 +98,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {confirmingLogout ? (
             /* Confirmation prompt */
-            <div className="rounded-lg bg-red-950/60 border border-red-500/30 px-3 py-2.5 space-y-2">
-              <p className="text-xs text-red-200 font-medium leading-snug">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/30 px-3 py-2.5 space-y-2">
+              <p className="text-xs text-destructive font-medium leading-snug">
                 Sign out of your session?
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={onLogout}
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold py-1.5 rounded transition-colors cursor-pointer"
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs font-semibold py-1.5 rounded transition-colors cursor-pointer"
                 >
                   Yes, sign out
                 </button>
                 <button
                   onClick={() => setConfirmingLogout(false)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold py-1.5 rounded transition-colors cursor-pointer"
+                  className="flex-1 bg-accent hover:bg-accent/80 text-accent-foreground text-xs font-semibold py-1.5 rounded transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -120,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             <button
               onClick={() => setConfirmingLogout(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 text-xs font-medium transition-all cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-transparent hover:border-destructive/20 text-xs font-medium transition-all cursor-pointer"
             >
               <LogOut size={14} />
               Sign Out
@@ -133,13 +133,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* ── Desktop Sidebar ─────────────────────────── */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 bg-ink-dark border-r border-slate-700/50 min-h-screen sticky top-0 h-screen">
+      <aside className="hidden md:flex flex-col w-56 shrink-0 bg-background/50 backdrop-blur-xl border-r border-border min-h-screen sticky top-0 h-screen">
         <NavContent />
       </aside>
 
       {/* ── Mobile: Hamburger button ─────────────────── */}
       <button
-        className="md:hidden fixed top-3 left-3 z-50 w-9 h-9 bg-ink-dark border border-slate-700 rounded-lg flex items-center justify-center text-slate-300 hover:text-white transition shadow-lg cursor-pointer"
+        className="md:hidden fixed top-3 left-3 z-50 w-9 h-9 bg-background border border-border rounded-lg flex items-center justify-center text-foreground hover:bg-accent transition shadow-lg cursor-pointer"
         onClick={() => setMobileOpen((v) => !v)}
       >
         {mobileOpen ? <X size={18} /> : <Menu size={18} />}
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
       <aside
-        className={`md:hidden fixed top-0 left-0 z-40 w-64 h-full bg-ink-dark border-r border-slate-700/50 flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`md:hidden fixed top-0 left-0 z-40 w-64 h-full bg-background/95 backdrop-blur-xl border-r border-border flex flex-col transform transition-transform duration-300 ease-in-out ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
